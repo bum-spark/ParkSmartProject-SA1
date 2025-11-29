@@ -1,0 +1,110 @@
+<div class="bg-white/80 backdrop-blur-xl border border-stone-200 rounded-2xl overflow-hidden hover:border-amber-400 transition-all duration-300 group shadow-lg shadow-stone-200/50">
+  <!-- Header card -->
+  <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-4 border-b border-stone-200">
+    <div class="flex items-start justify-between">
+      <div class="flex-1 min-w-0">
+        <h3 class="text-lg font-semibold text-stone-800 group-hover:text-amber-600 transition-colors">{{ sede().nombre }}</h3>
+        <p class="text-sm text-stone-500 flex items-center gap-1 mt-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span class="truncate">{{ sede().direccion }}</span>
+        </p>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Boton editar sede (solo Admin) -->
+        @if (esAdmin()) {
+          <button 
+            (click)="editar($event)"
+            class="btn btn-ghost btn-xs btn-circle text-stone-400 hover:text-amber-600 hover:bg-amber-500/20"
+            title="Editar sede"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        }
+        <span class="badge {{ getEstadoColor(sede().estado) }} badge-sm">{{ getEstadoTexto(sede().estado) }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Body card -->
+  <div class="p-4">
+    <!-- Ocupacion -->
+    <div class="mb-4">
+      <div class="flex items-center justify-between text-sm mb-2">
+        <span class="text-stone-500">Ocupación</span>
+        <span class="text-stone-800 font-medium">{{ ocupacionPorcentaje() }}%</span>
+      </div>
+      <progress 
+        class="progress {{ getOcupacionColor(ocupacionPorcentaje()) }} w-full h-2" 
+        [value]="ocupacionPorcentaje()" 
+        max="100"
+      ></progress>
+    </div>
+    
+    <!-- Stats -->
+    <div class="grid grid-cols-4 gap-2 mb-4">
+      <div class="text-center p-2 bg-stone-100 rounded-lg">
+        <p class="text-lg font-semibold text-stone-800">{{ sede().totalNiveles }}</p>
+        <p class="text-xs text-stone-500">Niveles</p>
+      </div>
+      <div class="text-center p-2 bg-green-50 rounded-lg">
+        <p class="text-lg font-semibold text-green-600">{{ sede().cajonesLibres }}</p>
+        <p class="text-xs text-stone-500">Libres</p>
+      </div>
+      <div class="text-center p-2 bg-red-50 rounded-lg">
+        <p class="text-lg font-semibold text-red-600">{{ sede().cajonesOcupados }}</p>
+        <p class="text-xs text-stone-500">Ocupados</p>
+      </div>
+      <div class="text-center p-2 bg-amber-50 rounded-lg">
+        <p class="text-lg font-semibold text-amber-600">{{ sede().cajonesReservados || 0 }}</p>
+        <p class="text-xs text-stone-500">Reservados</p>
+      </div>
+    </div>
+    
+    <!-- Tarifa -->
+    <div class="flex items-center justify-between text-sm text-stone-500 mb-4">
+      <span>Tarifa por hora:</span>
+      <span class="text-amber-600 font-medium">${{ sede().tarifaPorHora | number:'1.2-2' }}</span>
+    </div>
+    
+    <!-- Indicador de acceso valido -->
+    @if (accesoInfo().tieneAcceso) {
+      <div class="bg-green-50 border border-green-200 rounded-lg p-2 mb-3">
+        <div class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs text-green-700 font-medium">Acceso válido</p>
+            <p class="text-xs text-green-600 truncate">Hasta: {{ accesoInfo().fechaExpiracion }}</p>
+          </div>
+          <span class="badge badge-success badge-xs">{{ accesoInfo().tiempoRestante }}</span>
+        </div>
+      </div>
+    }
+    
+    <!-- Boton acceder -->
+    <button 
+      (click)="acceder()"
+      class="btn w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25"
+      [class.btn-disabled]="sede().estado !== 'activo'"
+    >
+      @if (accesoInfo().tieneAcceso) {
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Entrar
+      } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        Acceder
+      }
+    </button>
+  </div>
+</div>

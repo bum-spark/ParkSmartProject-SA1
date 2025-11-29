@@ -1,0 +1,378 @@
+@if (isOpen()) {
+  <div class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="cerrar()">
+    <div class="bg-white border border-stone-200 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+      <!-- Header modal -->
+      <div class="p-6 border-b border-stone-200 shrink-0">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-stone-800">Editar Sede</h3>
+              <p class="text-sm text-stone-500">{{ sede()?.nombre }}</p>
+            </div>
+          </div>
+          <button (click)="cerrar()" class="btn btn-ghost btn-sm btn-circle text-stone-400 hover:text-stone-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Body modal -->
+      <div class="p-6 overflow-y-auto flex-1">
+        <!-- Mensaje de éxito -->
+        @if (exito()) {
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p class="text-green-600 text-sm">Sede actualizada exitosamente</p>
+            </div>
+          </div>
+        }
+        
+        <!-- Error general -->
+        @if (error()) {
+          <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p class="text-red-600 text-sm text-center">{{ error() }}</p>
+          </div>
+        }
+        
+        <div class="space-y-5">
+          <!-- Estado de la sede -->
+          <div class="bg-stone-100 rounded-xl p-4 border border-stone-200">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="text-stone-800 font-medium">Estado de la Sede</h4>
+                <p class="text-xs text-stone-500 mt-1">Cambia el estado operativo de la sede</p>
+              </div>
+            </div>
+            
+            @if (errorCambiarEstado()) {
+              <div class="bg-red-50 border border-red-200 rounded-lg p-2 mb-3">
+                <p class="text-red-600 text-xs text-center">{{ errorCambiarEstado() }}</p>
+              </div>
+            }
+            
+            <div class="flex flex-wrap gap-2">
+              @for (estado of estadosSede; track estado) {
+                <button 
+                  (click)="cambiarEstado(estado)"
+                  class="btn btn-sm {{ getEstadoBotonClass(estado) }}"
+                  [disabled]="sede()?.estado === estado || cambiandoEstado() || !contrasenaCreador().trim()"
+                >
+                  @if (cambiandoEstado()) {
+                    <span class="loading loading-spinner loading-xs"></span>
+                  }
+                  {{ getEstadoTexto(estado) }}
+                  @if (sede()?.estado === estado) {
+                    <span class="badge badge-xs badge-neutral ml-1">Actual</span>
+                  }
+                </button>
+              }
+            </div>
+            <p class="text-xs text-stone-500 mt-3">
+              <span class="text-amber-600">⚠</span> Ingresa la contraseña del creador abajo para poder cambiar el estado
+            </p>
+          </div>
+          
+          <!-- Información básica -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text text-stone-600">Nombre de la sede *</span>
+              </label>
+              <input 
+                type="text" 
+                [ngModel]="nombre()" 
+                (ngModelChange)="nombre.set($event)"
+                placeholder="Ej: Sede Centro"
+                class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [disabled]="editando()"
+              />
+            </div>
+            
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text text-stone-600">Dirección *</span>
+              </label>
+              <input 
+                type="text" 
+                [ngModel]="direccion()" 
+                (ngModelChange)="direccion.set($event)"
+                placeholder="Ej: Av. Principal 123"
+                class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [disabled]="editando()"
+              />
+            </div>
+          </div>
+          
+          <!-- Tarifas -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text text-stone-600">Tarifa por hora ($) *</span>
+              </label>
+              <input 
+                type="number" 
+                [ngModel]="tarifaPorHora()" 
+                (ngModelChange)="tarifaPorHora.set($event)"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [disabled]="editando()"
+              />
+            </div>
+            
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text text-stone-600">Multa por hora ($) *</span>
+              </label>
+              <input 
+                type="number" 
+                [ngModel]="multaPorHora()" 
+                (ngModelChange)="multaPorHora.set($event)"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [disabled]="editando()"
+              />
+            </div>
+          </div>
+          
+          <!-- Tope de multa -->
+          <div class="bg-stone-100 rounded-xl p-4 border border-stone-200">
+            <div class="form-control">
+              <label class="label cursor-pointer justify-start gap-3">
+                <input 
+                  type="checkbox" 
+                  [ngModel]="multaConTope()" 
+                  (ngModelChange)="multaConTope.set($event)"
+                  class="checkbox checkbox-warning"
+                  [disabled]="editando()"
+                />
+                <span class="label-text text-stone-600">Aplicar tope máximo a la multa</span>
+              </label>
+            </div>
+            
+            @if (multaConTope()) {
+              <div class="form-control mt-3">
+                <label class="label">
+                  <span class="label-text text-stone-600">Monto máximo de multa ($) *</span>
+                </label>
+                <input 
+                  type="number" 
+                  [ngModel]="montoMaximoMulta()" 
+                  (ngModelChange)="montoMaximoMulta.set($event)"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                  [disabled]="editando()"
+                />
+              </div>
+            }
+          </div>
+          
+          <!-- Nueva contraseña de acceso (opcional) -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-stone-600">Nueva contraseña de acceso (opcional)</span>
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 input-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </span>
+              <input 
+                [type]="mostrarPasswordAcceso() ? 'text' : 'password'" 
+                [ngModel]="passwordAcceso()" 
+                (ngModelChange)="passwordAcceso.set($event)"
+                placeholder="Dejar vacío para no cambiar"
+                class="input input-bordered w-full pl-10 pr-10 bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [disabled]="editando()"
+              />
+              <button 
+                type="button" 
+                (click)="toggleMostrarPasswordAcceso()"
+                class="absolute inset-y-0 right-0 flex items-center pr-3 text-amber-600 hover:text-amber-700"
+              >
+                @if (mostrarPasswordAcceso()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                }
+              </button>
+            </div>
+            <label class="label">
+              <span class="label-text-alt text-stone-400">Solo ingresa si deseas cambiar la contraseña de acceso a la sede</span>
+            </label>
+          </div>
+          
+          <!-- Niveles -->
+          <div class="bg-stone-100 rounded-xl p-4 border border-stone-200">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="text-stone-800 font-medium">Niveles del estacionamiento</h4>
+                <p class="text-xs text-stone-500 mt-1">⚠️ Modificar niveles reconstruirá los cajones</p>
+              </div>
+              <button 
+                type="button"
+                (click)="agregarNivel()"
+                class="btn btn-sm bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 border-0"
+                [disabled]="editando()"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Agregar nivel
+              </button>
+            </div>
+            
+            <div class="space-y-3">
+              @for (nivel of niveles(); track $index; let i = $index) {
+                <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-stone-200">
+                  <div class="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center shrink-0">
+                    <span class="text-amber-700 font-semibold">{{ i + 1 }}</span>
+                  </div>
+                  
+                  <div class="flex-1 grid grid-cols-2 gap-3">
+                    <div class="form-control">
+                      <label class="label py-0">
+                        <span class="label-text text-stone-500 text-xs">Número de piso</span>
+                      </label>
+                      <input 
+                        type="number" 
+                        [ngModel]="nivel.numeroPiso" 
+                        (ngModelChange)="actualizarPisoNivel(i, $event)"
+                        class="input input-sm input-bordered bg-stone-50 border-stone-300 text-stone-800 focus:border-amber-500"
+                        [disabled]="editando()"
+                      />
+                      <label class="label py-0">
+                        <span class="label-text-alt text-stone-400 text-xs">Negativos = sótanos</span>
+                      </label>
+                    </div>
+                    <div class="form-control">
+                      <label class="label py-0">
+                        <span class="label-text text-stone-500 text-xs">Capacidad (cajones)</span>
+                      </label>
+                      <input 
+                        type="number" 
+                        [ngModel]="nivel.capacidad" 
+                        (ngModelChange)="actualizarCapacidadNivel(i, $event)"
+                        min="1"
+                        class="input input-sm input-bordered bg-stone-50 border-stone-300 text-stone-800 focus:border-amber-500"
+                        [disabled]="editando()"
+                      />
+                    </div>
+                  </div>
+                  
+                  <button 
+                    type="button"
+                    (click)="eliminarNivel(i)"
+                    class="btn btn-ghost btn-sm btn-circle"
+                    [ngClass]="niveles().length <= 1 ? 'text-stone-300 cursor-not-allowed opacity-50' : 'text-red-500 hover:text-red-600 hover:bg-red-50'"
+                    [disabled]="niveles().length <= 1 || editando()"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+            
+            <!-- Resumen de niveles -->
+            <div class="mt-4 pt-4 border-t border-stone-200 flex items-center justify-between text-sm">
+              <span class="text-stone-500">Total de cajones:</span>
+              <span class="text-amber-600 font-semibold">{{ totalCajones() }}</span>
+            </div>
+          </div>
+          
+          <!-- Contraseña del creador (requerida) -->
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text text-amber-800 font-medium">Contraseña del creador *</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </span>
+                <input 
+                  [type]="mostrarPasswordCreador() ? 'text' : 'password'" 
+                  [ngModel]="contrasenaCreador()" 
+                  (ngModelChange)="contrasenaCreador.set($event)"
+                  placeholder="Contraseña del creador de la sede"
+                  class="input input-bordered w-full pl-10 pr-10 bg-white border-amber-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                  [disabled]="editando()"
+                />
+                <button 
+                  type="button" 
+                  (click)="toggleMostrarPasswordCreador()"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-amber-600 hover:text-amber-700"
+                >
+                  @if (mostrarPasswordCreador()) {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  }
+                </button>
+              </div>
+              <label class="label">
+                <span class="label-text-alt text-amber-700">Requerida para confirmar cambios o cambiar estado</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer modal -->
+      <div class="p-6 border-t border-stone-200 flex gap-3 shrink-0">
+        <button 
+          (click)="cerrar()" 
+          class="btn flex-1 bg-stone-200 hover:bg-stone-300 text-stone-700 border-0"
+          [disabled]="editando()"
+        >
+          Cancelar
+        </button>
+        <button 
+          (click)="guardar()" 
+          class="btn flex-1 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0"
+          [disabled]="editando() || !hayCambiosPendientes()"
+        >
+          @if (editando()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            Guardando...
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Guardar Cambios
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,135 @@
+¡Claro que sí! He revisado el código completo del archivo Canvas de Gemni.txt. Es una aplicación React completa y bastante robusta para la gestión de estacionamientos (Single Page Application).
+
+A continuación, te presento un desglose detallado de qué hace el sistema, cómo está estructurado el código y para qué sirve cada componente.
+
+1. Descripción General del Sistema (Funcionalidad)
+ParkSmart es un sistema administrativo "Multi-Sede". Esto significa que no gestiona un solo estacionamiento, sino una red de ellos. Está diseñado para administradores y operadores.
+
+Flujo Principal:
+
+Autenticación: El usuario entra o se registra.
+
+Selección de Sede: El usuario ve todas las sucursales, sus ganancias del día y ocupación. Debe elegir una para trabajar.
+
+Operación: Una vez dentro de una sede, el usuario gestiona el mapa en tiempo real (entradas, salidas, cobros, reservas).
+
+2. Arquitectura de Datos (Mock Data)
+Al inicio del código, se definen las estructuras que alimentan la simulación:
+
+INITIAL_LOCATIONS: Es la "base de datos" simulada. Contiene:
+
+Datos básicos (nombre, dirección).
+
+Configuración Financiera: hourlyRate (tarifa), penaltyRate (multas).
+
+Seguridad: password (contraseña específica para entrar a esa sede).
+
+Estructura Física (levelsConfig): Un arreglo que define cuántos pisos hay y cuántos cajones tiene cada piso. Esto es clave porque permite que cada edificio sea diferente.
+
+TYPES: Define los tipos de cajones (Normal, Discapacitado, Eléctrico) con sus colores y configuraciones visuales.
+
+generateSpotsForLocation: Una función auxiliar crucial. Toma la configuración de niveles de la sede y "construye" el array de espacios (spots) dinámicamente, asignando IDs únicos (ej: 1-05 = Piso 1, Cajón 5) y simulando ocupación aleatoria.
+
+3. Desglose de Componentes (El Código)
+El código está dividido en varios componentes funcionales dentro del mismo archivo para facilitar la portabilidad en el Canvas.
+
+A. LoginScreen (Pantalla de Acceso)
+Función: Maneja el ingreso y registro de usuarios.
+
+Lógica: Tiene un estado isRegistering que alterna entre el formulario de login y el de registro.
+
+Detalle: Simula una llamada a API con setTimeout para dar sensación de carga. Al finalizar, llama a onLogin pasando los datos del usuario al componente principal.
+
+B. LocationSelectionScreen (Selección de Sede)
+Función: Es el "Lobby" o menú principal. Muestra las tarjetas de cada estacionamiento.
+
+Seguridad:
+
+Cuando haces clic en una sede, no entras inmediatamente. Se abre un pequeño modal (verifyingAccessTo) que pide la contraseña de esa sede específica.
+
+Solo si la contraseña coincide, se ejecuta onSelect.
+
+Gestión: Permite crear nuevas sedes (botón "+") o editar las existentes (botón de engranaje).
+
+C. ParkingSettingsModal (El Cerebro de Configuración)
+Función: Es el modal más complejo. Permite Crear o Editar una sede.
+
+Seguridad por Capas:
+
+Paso 1 (Auth): Pide la contraseña de la sede para desbloquear la edición.
+
+Paso 2 (Edit): Muestra el formulario.
+
+Paso 3 (Confirmación): Si intentas guardar cambios sensibles (como tarifas o estructura), pide la contraseña de tu cuenta de usuario (Admin).
+
+Reglas de Negocio: Bloquea la edición de la estructura física (agregar/quitar niveles) si la sede está "Activa" u "Ocupada". Obliga a poner la sede en "Mantenimiento" o "Inactivo" y vaciarla.
+
+D. UserProfileModal (Perfil de Usuario)
+Función: Permite al usuario cambiar su nombre, rol y contraseña.
+
+Lógica: Valida que la contraseña actual sea correcta antes de permitir cambiarla por una nueva.
+
+E. ParkingSystem (Componente Principal / Dashboard)
+Este es el componente padre que orquesta todo. Maneja el estado global (user, selectedParking, spots, historial).
+
+Vistas Principales (Tabs):
+
+Dashboard (Resumen):
+
+Muestra tarjetas (KPIs) con disponibilidad, autos en sitio y dinero recaudado.
+
+Gráficas de barra (usando CSS puro/Tailwind) que muestran la saturación por cada piso de la sede seleccionada.
+
+Mapa Digital (El Core del Sistema):
+
+Visualización: Renderiza una cuadrícula de botones representando los cajones. Cambian de color según su estado (Libre=Blanco, Ocupado=Rojo, Reservado=Ámbar).
+
+Navegación: Botones para cambiar de piso (Nivel 1, Nivel 2, etc.).
+
+Interacción (handleSpotClick):
+
+Clic en Libre: Abre modal para Registrar Entrada (Ingresar Placa) o Reservar.
+
+Clic en Ocupado: Abre modal de Salida/Cobro. Calcula la tarifa basada en el tiempo transcurrido y la configuración de la sede.
+
+Asignación Inteligente (handleAutoAssignSpot): Un algoritmo que busca automáticamente el primer lugar libre. Primero busca en el piso actual; si no hay, busca en los siguientes pisos. Prioriza tipos de espacio (Normal > Eléctrico > Discapacitado).
+
+Historial:
+
+Una tabla limpia que muestra las transacciones pasadas (Entradas/Salidas finalizadas).
+
+Reservas Activas:
+
+Muestra tarjetas con los vehículos que tienen una reserva pendiente.
+
+Permite "Ingresar" (convertir reserva en ocupación real) o "Cancelar" (liberar el espacio).
+
+4. Flujos de Trabajo Clave en el Código
+Flujo de Cobro (Salida)
+El usuario da clic en un auto rojo (Ocupado).
+
+El sistema calcula: Tiempo = Hora Actual - Hora Entrada.
+
+Obtiene la hourlyRate de la configuración de esa sede específica.
+
+Calcula Total = Horas * Tarifa.
+
+Muestra el modal con el monto.
+
+Al confirmar, cambia el estado a 'libre', guarda el registro en historial y libera el espacio.
+
+Flujo de Modificación de Espacio (Feature Avanzada)
+En el mapa, al dar clic en un espacio libre, aparece un ícono de "Lápiz/Edición".
+
+Permite cambiar el Tipo de ese cajón específico (ej. volverlo "Exclusivo para Carga EV").
+
+Antes de guardar, pide la contraseña del Administrador para autorizar el cambio de infraestructura.
+
+5. Tecnologías Usadas en el Canvas
+React Hooks: useState para todo el manejo de datos locales, useEffect para inicializar datos al cambiar de sede, useMemo para cálculos de estadísticas que no se repitan innecesariamente.
+
+Tailwind CSS: Todo el diseño visual (colores slate-900, violet-600, espaciados p-4, m-2, bordes redondeados rounded-xl).
+
+Lucide React: La librería de íconos (Coches, Billetes, Relojes) que le da el aspecto profesional.
+
+En resumen, el código es un simulador completo de gestión. No tiene base de datos real (todo se pierde al recargar la página porque está en memoria), pero la lógica de negocio, las validaciones de seguridad y la interfaz de usuario están listas para conectarse a un Backend real.

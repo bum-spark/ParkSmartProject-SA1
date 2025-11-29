@@ -1,0 +1,813 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Car, 
+  LayoutDashboard, 
+  Map as MapIcon, 
+  History, 
+  CalendarClock, 
+  CreditCard, 
+  Zap, 
+  Accessibility, 
+  Clock, 
+  CheckCircle, 
+  AlertCircle, 
+  Search,
+  Filter,
+  DollarSign,
+  MoreVertical,
+  LogOut,
+  User,
+  Lock,
+  Mail,
+  Timer,
+  PlusCircle,
+  ArrowRight,
+  XCircle,
+  CalendarCheck,
+  Building2,
+  MapPin,
+  ChevronLeft,
+  Settings,
+  Trash2,
+  AlertTriangle,
+  Unlock,
+  Save,
+  MinusCircle,
+  Plus,
+  ShieldCheck,
+  KeyRound,
+  Fingerprint,
+  Edit3,
+  UserCircle,
+  Briefcase,
+  Coins
+} from 'lucide-react';
+
+// --- ESTILOS GLOBALES (Tipografías) ---
+const GlobalStyles = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    h1, h2, h3, h4, .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+    
+    /* Scrollbar personalizado */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9; 
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1; 
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8; 
+    }
+  `}</style>
+);
+
+// --- MOCK DATA & CONSTANTS ---
+// Eliminamos TARIFA_HORA global para usar la de cada sede
+const PISOS = 3;
+const ESPACIOS_POR_PISO = 20;
+
+const INITIAL_LOCATIONS = [
+  {
+    id: 1,
+    name: "Plaza Central Mall",
+    address: "Av. Reforma 222, CDMX",
+    totalSpaces: 120,
+    occupied: 85,
+    revenue: 12500,
+    status: "active", 
+    password: "123",
+    image: "bg-gradient-to-br from-blue-600 to-indigo-700",
+    hourlyRate: 25,
+    penaltyRate: 50,
+    penaltyLimit: null, // null significa sin limite
+    levelsConfig: [ { id: 1, capacity: 40 }, { id: 2, capacity: 40 }, { id: 3, capacity: 40 } ]
+  },
+  {
+    id: 2,
+    name: "Torre Ejecutiva Norte",
+    address: "Blvd. Manuel Ávila Camacho, Naucalpan",
+    totalSpaces: 80,
+    occupied: 45,
+    revenue: 8400,
+    status: "active",
+    password: "123",
+    image: "bg-gradient-to-br from-slate-700 to-slate-900",
+    hourlyRate: 35,
+    penaltyRate: 70,
+    penaltyLimit: 500, 
+    levelsConfig: [ { id: 1, capacity: 40 }, { id: 2, capacity: 40 } ]
+  },
+  {
+    id: 3,
+    name: "Estadio Universitario",
+    address: "Ciudad Universitaria, Coyoacán",
+    totalSpaces: 450,
+    occupied: 0, 
+    revenue: 0,
+    status: "maintenance",
+    password: "123",
+    image: "bg-gradient-to-br from-amber-500 to-orange-600",
+    hourlyRate: 15,
+    penaltyRate: 30,
+    penaltyLimit: null,
+    levelsConfig: [ { id: 1, capacity: 150 }, { id: 2, capacity: 150 }, { id: 3, capacity: 150 } ]
+  }
+];
+
+const TYPES = {
+  NORMAL: { 
+    id: 'normal', 
+    label: 'Estándar', 
+    icon: Car, 
+    color: 'bg-slate-100 text-slate-600 border-slate-200',
+    badge: 'bg-slate-100 text-slate-700'
+  },
+  DISCAPACITADO: { 
+    id: 'discapacitado', 
+    label: 'Accesible', 
+    icon: Accessibility, 
+    color: 'bg-violet-50 text-violet-600 border-violet-100',
+    badge: 'bg-violet-100 text-violet-700'
+  },
+  ELECTRICO: { 
+    id: 'electrico', 
+    label: 'E-Charge', 
+    icon: Zap, 
+    color: 'bg-teal-50 text-teal-600 border-teal-100',
+    badge: 'bg-teal-100 text-teal-700'
+  },
+};
+
+// Generador de espacios basado en la configuración de la sede
+const generateSpotsForLocation = (levelsConfig) => {
+  let spots = [];
+  if (!levelsConfig) return [];
+
+  levelsConfig.forEach((level) => {
+      for (let e = 1; e <= level.capacity; e++) {
+        let type = TYPES.NORMAL.id;
+        // Simulación de tipos
+        if (e <= 2) type = TYPES.DISCAPACITADO.id; 
+        else if (e >= level.capacity - 2) type = TYPES.ELECTRICO.id; 
+
+        const isOccupied = Math.random() < 0.3;
+        const entryTime = isOccupied ? new Date(Date.now() - Math.random() * 10000000) : null;
+
+        spots.push({
+            id: `${level.id}-${e.toString().padStart(2, '0')}`,
+            numero: e,
+            piso: level.id,
+            tipo: type,
+            estado: isOccupied ? 'ocupado' : 'libre', 
+            placa: isOccupied ? `ABC-${Math.floor(Math.random() * 900) + 100}` : null,
+            horaEntrada: entryTime,
+            reservationTime: null 
+        });
+      }
+  });
+  return spots;
+};
+
+// --- LOGIN COMPONENT ---
+const LoginScreen = ({ onLogin }) => {
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (isRegistering && password !== confirmPassword) {
+        alert("Las contraseñas no coinciden.");
+        return;
+    }
+    setIsLoading(true);
+    setTimeout(() => {
+      if (isRegistering) {
+        onLogin({ name: name || 'Nuevo Usuario', role: role || 'Usuario', email: email, accountPassword: password });
+      } else {
+        onLogin({ name: 'Admin User', role: 'Gerente General', email: email, accountPassword: password || 'admin' });
+      }
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0F172A] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-[100px]"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-blue-600/10 blur-[120px]"></div>
+      </div>
+
+      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row z-10 border border-white/10 h-auto min-h-[550px]">
+        <div className="bg-gradient-to-br from-violet-700 to-indigo-900 p-12 flex flex-col justify-between md:w-1/2 text-white relative overflow-hidden">
+           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+           <div>
+             <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/20">
+               <Car className="text-white" size={32} />
+             </div>
+             <h1 className="text-4xl font-heading font-bold mb-2">ParkSmart</h1>
+             <p className="text-violet-200 text-lg font-light">Gestión inteligente para espacios modernos.</p>
+           </div>
+           <div className="mt-12 md:mt-0">
+             <div className="flex items-center space-x-2 text-sm text-violet-200 bg-white/5 p-3 rounded-lg backdrop-blur-sm inline-block">
+                <CheckCircle size={16} className="text-emerald-400"/> <span>Sistema Operativo v2.4</span>
+             </div>
+           </div>
+        </div>
+        
+        <div className="p-10 md:w-1/2 bg-white overflow-y-auto max-h-[85vh] md:max-h-auto">
+          <div className="mb-6">
+            <h2 className="text-2xl font-heading font-bold text-slate-800">{isRegistering ? 'Crear Cuenta' : 'Bienvenido'}</h2>
+            <p className="text-slate-500">{isRegistering ? 'Ingresa tus datos para registrarte.' : 'Ingresa tus credenciales para acceder.'}</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegistering && (
+                <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+                    <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre Completo</label>
+                    <div className="relative group">
+                        <UserCircle className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-violet-600 transition-colors" size={20} />
+                        <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 focus:bg-white transition-all font-medium text-slate-700" placeholder="Ej. Juan Pérez" />
+                    </div>
+                    </div>
+                    <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cargo / Rol</label>
+                    <div className="relative group">
+                        <Briefcase className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-violet-600 transition-colors" size={20} />
+                        <input type="text" required value={role} onChange={(e) => setRole(e.target.value)} className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 focus:bg-white transition-all font-medium text-slate-700" placeholder="Ej. Supervisor" />
+                    </div>
+                    </div>
+                </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Correo Corporativo</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-violet-600 transition-colors" size={20} />
+                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 focus:bg-white transition-all font-medium text-slate-700" placeholder={isRegistering ? "tu.correo@empresa.com" : "admin@parksmart.com"} />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Contraseña</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-violet-600 transition-colors" size={20} />
+                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 focus:bg-white transition-all font-medium text-slate-700" placeholder="••••••••" />
+              </div>
+            </div>
+
+            {isRegistering && (
+                <div className="animate-in slide-in-from-right-4 duration-300">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Confirmar Contraseña</label>
+                    <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-violet-600 transition-colors" size={20} />
+                        <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`w-full pl-12 pr-4 py-3.5 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:bg-white transition-all font-medium text-slate-700 ${confirmPassword && password !== confirmPassword ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 focus:border-violet-500'}`} placeholder="••••••••" />
+                    </div>
+                </div>
+            )}
+
+            <div className="flex items-center justify-between text-sm pt-2">
+              {!isRegistering && (
+                  <label className="flex items-center text-slate-600 cursor-pointer">
+                    <input type="checkbox" className="mr-2 rounded text-violet-600 focus:ring-violet-500 border-slate-300 w-4 h-4"/>
+                    <span className="font-medium">Recordarme</span>
+                  </label>
+              )}
+              <button type="button" onClick={() => { setIsRegistering(!isRegistering); setPassword(''); setConfirmPassword(''); }} className="text-violet-600 hover:text-violet-800 font-semibold ml-auto transition-colors">
+                {isRegistering ? "¿Ya tienes cuenta? Iniciar Sesión" : "Crear nueva cuenta"}
+              </button>
+            </div>
+
+            <button type="submit" disabled={isLoading} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transform transition-all hover:scale-[1.01] shadow-xl shadow-slate-200 flex justify-center items-center group">
+              {isLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> : <span className="flex items-center">{isRegistering ? 'Registrarse' : 'Iniciar Sesión'} <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span></span>}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- MODAL DE PERFIL DE USUARIO ---
+const UserProfileModal = ({ user, isOpen, onClose, onUpdate }) => {
+    const [activeTab, setActiveTab] = useState('profile');
+    const [formData, setFormData] = useState({ name: '', email: '', role: '', currentPassword: '', newPassword: '', confirmPassword: '' });
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (isOpen && user) {
+            setFormData({ name: user.name, email: user.email, role: user.role, currentPassword: '', newPassword: '', confirmPassword: '' });
+            setError('');
+            setActiveTab('profile');
+        }
+    }, [isOpen, user]);
+
+    if (!isOpen) return null;
+
+    const handleSave = () => {
+        setError('');
+        if (!formData.name || !formData.email) { setError('Nombre y correo son obligatorios.'); return; }
+        
+        let updatedPassword = user.accountPassword;
+        if (formData.newPassword) {
+             if (!formData.currentPassword) { setError('Ingresa tu contraseña actual para confirmar.'); setActiveTab('security'); return; }
+             if (formData.currentPassword !== user.accountPassword) { setError('La contraseña actual es incorrecta.'); setActiveTab('security'); return; }
+             if (formData.newPassword !== formData.confirmPassword) { setError('Las nuevas contraseñas no coinciden.'); setActiveTab('security'); return; }
+             updatedPassword = formData.newPassword;
+        }
+
+        onUpdate({ ...user, name: formData.name, email: formData.email, role: formData.role, accountPassword: updatedPassword });
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-white/20 animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+                <div className="bg-slate-900 p-6 text-white flex items-center gap-4 flex-shrink-0">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-400 to-orange-500 flex items-center justify-center text-2xl font-bold shadow-lg border-2 border-white/20">
+                        {formData.name ? formData.name.substring(0,2).toUpperCase() : 'US'}
+                    </div>
+                    <div>
+                        <h3 className="font-heading font-bold text-xl">Mi Perfil</h3>
+                        <p className="text-slate-300 text-sm">Gestiona tu cuenta personal</p>
+                    </div>
+                    <button onClick={onClose} className="ml-auto text-slate-400 hover:text-white bg-white/10 p-2 rounded-full">✕</button>
+                </div>
+
+                <div className="flex border-b border-slate-100 px-6 pt-4 gap-6">
+                    <button onClick={() => setActiveTab('profile')} className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'profile' ? 'border-violet-600 text-violet-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>Datos Personales</button>
+                    <button onClick={() => setActiveTab('security')} className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'security' ? 'border-violet-600 text-violet-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>Seguridad</button>
+                </div>
+
+                <div className="p-6 overflow-y-auto flex-1">
+                    {error && <div className="bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold p-3 rounded-xl mb-4 flex items-center"><AlertCircle size={16} className="mr-2 flex-shrink-0"/>{error}</div>}
+
+                    {activeTab === 'profile' && (
+                        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+                            <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre Completo</label><div className="relative"><UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-violet-500 outline-none transition-all" /></div></div>
+                            <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Correo Electrónico</label><div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-violet-500 outline-none transition-all" /></div></div>
+                            <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cargo / Rol</label><div className="relative"><ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/><input type="text" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-violet-500 outline-none transition-all" /></div></div>
+                        </div>
+                    )}
+
+                    {activeTab === 'security' && (
+                        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+                            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-2"><h5 className="text-xs font-bold text-indigo-700 mb-1 flex items-center"><KeyRound size={14} className="mr-1.5"/> Cambio de Contraseña</h5><p className="text-[10px] text-indigo-600/80">Para actualizar tu contraseña, es necesario confirmar tu contraseña actual.</p></div>
+                            <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña Actual</label><input type="password" value={formData.currentPassword} onChange={(e) => setFormData({...formData, currentPassword: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-violet-500 outline-none transition-all" placeholder="••••••••" /></div>
+                            <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-4">
+                                <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nueva Contraseña</label><input type="password" value={formData.newPassword} onChange={(e) => setFormData({...formData, newPassword: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-violet-500 outline-none transition-all" placeholder="Nueva clave" /></div>
+                                <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Confirmar</label><input type="password" value={formData.confirmPassword} onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-violet-500 outline-none transition-all" placeholder="Repetir clave" /></div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 flex-shrink-0">
+                    <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-200/50 transition-all">Cancelar</button>
+                    <button onClick={handleSave} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 shadow-lg shadow-slate-200 transition-all flex items-center"><Save size={18} className="mr-2"/> Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- MODAL DE CONFIGURACIÓN DE SEDE ---
+const ParkingSettingsModal = ({ location, isOpen, onClose, onSave, onDelete, isCreating, currentUser }) => {
+    const [step, setStep] = useState('auth'); 
+    const [passwordInput, setPasswordInput] = useState('');
+    const [adminPasswordInput, setAdminPasswordInput] = useState('');
+    const [error, setError] = useState('');
+    
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [newLocationPassword, setNewLocationPassword] = useState('');
+    
+    const [formData, setFormData] = useState({ 
+        name: '', address: '', totalSpaces: 0, status: 'active', password: '', 
+        levelsConfig: [{ id: 1, capacity: 20 }], image: "bg-gradient-to-br from-slate-700 to-slate-900",
+        hourlyRate: 25, penaltyRate: 50, penaltyLimit: null
+    });
+
+    useEffect(() => {
+        if (isOpen) {
+            if (isCreating) {
+                setStep('edit');
+                setFormData({ 
+                    name: '', address: '', totalSpaces: 20, status: 'active', password: '', 
+                    levelsConfig: [{ id: 1, capacity: 20 }], image: "bg-gradient-to-br from-slate-700 to-slate-900", occupied: 0, revenue: 0,
+                    hourlyRate: 25, penaltyRate: 50, penaltyLimit: null
+                });
+            } else if (location) {
+                setStep('auth');
+                setPasswordInput('');
+                setIsChangingPassword(false);
+                setNewLocationPassword('');
+                setAdminPasswordInput('');
+                setError('');
+                const initialData = {
+                    ...location,
+                    levelsConfig: location.levelsConfig || [
+                        { id: 1, capacity: Math.floor(location.totalSpaces / Math.max(1, Math.floor(location.totalSpaces/20))) || 20 }
+                    ]
+                };
+                setFormData(initialData);
+            }
+        }
+    }, [isOpen, location, isCreating]);
+
+    if (!isOpen) return null;
+
+    const verifyLocationPassword = () => {
+        if (passwordInput === location.password) { setStep('edit'); setError(''); } else { setError('Contraseña incorrecta'); }
+    };
+
+    const handlePreSave = () => {
+        if (!formData.name || !formData.address) { alert("Por favor completa el nombre y la dirección."); return; }
+        if (isCreating && !formData.password) { alert("Debes asignar una contraseña a la nueva sede."); return; }
+        if (!isCreating && isChangingPassword && !newLocationPassword) { alert("Ingresa la nueva contraseña."); return; }
+        setStep('confirm_user_pass');
+        setAdminPasswordInput('');
+        setError('');
+    };
+
+    const verifyUserPasswordAndSave = () => {
+        if (adminPasswordInput === currentUser.accountPassword) {
+            if (isChangingPassword && newLocationPassword) { formData.password = newLocationPassword; }
+            const newTotal = formData.levelsConfig.reduce((sum, lvl) => sum + lvl.capacity, 0);
+            onSave({ ...formData, totalSpaces: newTotal });
+            onClose();
+        } else {
+            setError('Contraseña de administrador incorrecta.');
+        }
+    };
+
+    const handleDelete = () => {
+        if (window.confirm(`¿Estás seguro de eliminar "${location.name}"?`)) { onDelete(location.id); onClose(); }
+    };
+
+    const addLevel = () => {
+        const newId = formData.levelsConfig.length + 1;
+        setFormData({ ...formData, levelsConfig: [...formData.levelsConfig, { id: newId, capacity: 20 }] });
+    };
+
+    const removeLevel = (levelId) => {
+        if (formData.levelsConfig.length <= 1) return; 
+        setFormData({ ...formData, levelsConfig: formData.levelsConfig.filter(lvl => lvl.id !== levelId) });
+    };
+
+    const updateLevelCapacity = (levelId, newCapacity) => {
+        setFormData({ ...formData, levelsConfig: formData.levelsConfig.map(lvl => lvl.id === levelId ? { ...lvl, capacity: parseInt(newCapacity) || 0 } : lvl) });
+    };
+
+    const isInactiveOrMaintenance = formData.status === 'maintenance' || formData.status === 'inactive';
+    const canEditStructure = isCreating || (isInactiveOrMaintenance && location?.occupied === 0);
+    const calculatedTotal = formData.levelsConfig.reduce((sum, lvl) => sum + lvl.capacity, 0);
+
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-white/20 animate-in zoom-in duration-200 my-8 flex flex-col max-h-[90vh]">
+                <div className="bg-slate-50 p-6 border-b border-slate-100 flex justify-between items-center flex-shrink-0">
+                    <div>
+                        <h3 className="font-heading font-bold text-xl text-slate-800">{step === 'confirm_user_pass' ? "Confirmar Cambios" : (isCreating ? "Registrar Nueva Sede" : "Configuración de Sede")}</h3>
+                        <p className="text-slate-500 text-sm">{step === 'confirm_user_pass' ? "Seguridad requerida" : (isCreating ? "Configura los parámetros iniciales" : formData.name)}</p>
+                    </div>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+
+                <div className="p-8 overflow-y-auto">
+                    {step === 'auth' && (
+                        <div className="text-center space-y-6">
+                            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto"><Lock className="text-slate-400" size={32}/></div>
+                            <div><h4 className="text-lg font-bold text-slate-800">Acceso Restringido</h4><p className="text-slate-500 text-sm">Ingresa la contraseña <strong>de la sede</strong> para modificarla.</p></div>
+                            <div className="space-y-2"><input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder="Contraseña de la Sede" className="w-full p-3 border border-slate-200 rounded-xl text-center text-lg font-bold tracking-widest focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition-all" autoFocus />{error && <p className="text-rose-500 text-xs font-bold">{error}</p>}</div>
+                            <button onClick={verifyLocationPassword} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-all"><Unlock size={18} className="inline mr-2"/> Desbloquear Ajustes</button>
+                        </div>
+                    )}
+
+                    {step === 'edit' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 gap-4">
+                                <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre de la Sede</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-medium focus:bg-white focus:border-violet-500 outline-none transition-all" placeholder="Ej. Torre Central" /></div>
+                                <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label><input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-medium focus:bg-white focus:border-violet-500 outline-none transition-all" placeholder="Ej. Av. Principal #123" /></div>
+                            </div>
+                            <div className="h-px bg-slate-100 my-2"></div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Estado Operativo</label>
+                                <div className="flex bg-slate-100 p-1 rounded-lg gap-1">
+                                    <button onClick={() => setFormData({...formData, status: 'active'})} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${formData.status === 'active' ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'}`}>Activo</button>
+                                    <button onClick={() => setFormData({...formData, status: 'maintenance'})} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${formData.status === 'maintenance' ? 'bg-white text-amber-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'}`}>Mantenimiento</button>
+                                    <button onClick={() => setFormData({...formData, status: 'inactive'})} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${formData.status === 'inactive' ? 'bg-white text-slate-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'}`}>Inactivo</button>
+                                </div>
+                            </div>
+
+                            {/* Configuración Financiera (NUEVO) */}
+                            <div className={`p-4 rounded-xl border transition-all ${canEditStructure ? 'bg-emerald-50/50 border-emerald-100' : 'bg-slate-50 border-slate-100 opacity-80'}`}>
+                                <div className="flex justify-between items-center mb-3">
+                                     <h5 className={`text-sm font-bold ${canEditStructure ? 'text-emerald-800' : 'text-slate-500'} flex items-center`}>
+                                         <Coins size={16} className="mr-2"/> Tarifas y Multas
+                                     </h5>
+                                     {!canEditStructure && <Lock size={14} className="text-slate-400"/>}
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-slate-500 mb-1">Tarifa / Hora ($)</label>
+                                        <input type="number" disabled={!canEditStructure} value={formData.hourlyRate} onChange={(e) => setFormData({...formData, hourlyRate: parseFloat(e.target.value)})} className="w-full p-2 bg-white border border-slate-200 rounded-lg disabled:bg-slate-100"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-500 mb-1">Multa / Hora ($)</label>
+                                        <input type="number" disabled={!canEditStructure} value={formData.penaltyRate} onChange={(e) => setFormData({...formData, penaltyRate: parseFloat(e.target.value)})} className="w-full p-2 bg-white border border-slate-200 rounded-lg disabled:bg-slate-100"/>
+                                    </div>
+                                </div>
+                                <div className="mt-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs text-slate-500">Límite de Multa ($)</label>
+                                        {canEditStructure && (
+                                            <div className="flex items-center">
+                                                <input type="checkbox" checked={formData.penaltyLimit === null} onChange={(e) => setFormData({...formData, penaltyLimit: e.target.checked ? null : 0})} className="mr-1 accent-emerald-600 h-3 w-3"/>
+                                                <span className="text-[10px] text-slate-500">Sin Límite</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <input type="number" disabled={!canEditStructure || formData.penaltyLimit === null} value={formData.penaltyLimit === null ? '' : formData.penaltyLimit} onChange={(e) => setFormData({...formData, penaltyLimit: parseFloat(e.target.value)})} placeholder={formData.penaltyLimit === null ? "∞" : "0.00"} className="w-full p-2 bg-white border border-slate-200 rounded-lg disabled:bg-slate-100 disabled:text-slate-400"/>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <div className="flex justify-between items-center mb-2"><h5 className="text-sm font-bold text-slate-700 flex items-center"><ShieldCheck size={16} className="mr-2 text-violet-600"/> Seguridad de Sede</h5>{!isCreating && (<button onClick={() => setIsChangingPassword(!isChangingPassword)} className="text-xs font-bold text-violet-600 hover:underline">{isChangingPassword ? "Cancelar cambio" : "Cambiar contraseña"}</button>)}</div>
+                                {isCreating && (<div><label className="block text-xs text-slate-500 mb-1">Contraseña de Acceso a Sede</label><input type="text" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" placeholder="Define una contraseña para esta sede" /></div>)}
+                                {!isCreating && isChangingPassword && (<div className="space-y-3 mt-2 animate-in slide-in-from-top-2"><div><label className="block text-xs text-slate-500 mb-1">Nueva Contraseña de Sede</label><input type="password" value={newLocationPassword} onChange={(e) => setNewLocationPassword(e.target.value)} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm" placeholder="Nueva contraseña" /></div></div>)}
+                                {!isCreating && !isChangingPassword && (<p className="text-xs text-slate-400 italic">La contraseña de la sede permanece sin cambios.</p>)}
+                            </div>
+                            <div className={`p-5 rounded-xl border transition-all ${canEditStructure ? 'bg-violet-50/50 border-violet-100' : 'bg-slate-50 border-slate-100 opacity-80'}`}>
+                                <div className="flex justify-between items-start mb-4"><div><h5 className={`text-sm font-bold ${canEditStructure ? 'text-violet-800' : 'text-slate-500'}`}>Estructura Física</h5><p className="text-xs text-slate-400 mt-0.5">Capacidad Total: <span className="font-bold text-slate-700">{calculatedTotal}</span> espacios</p></div></div>
+                                <div className="space-y-3">{formData.levelsConfig.map((level, index) => (<div key={level.id} className="flex items-center gap-3"><span className="text-xs font-bold text-slate-500 w-16 uppercase">Nivel {index + 1}</span><div className="flex-1 relative"><input type="number" disabled={!canEditStructure} value={level.capacity} onChange={(e) => updateLevelCapacity(level.id, e.target.value)} className="w-full pl-3 pr-12 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:border-violet-400 outline-none disabled:bg-slate-100"/><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">espacios</span></div>{canEditStructure && (<button onClick={() => removeLevel(level.id)} className="p-2 text-rose-400 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors" title="Eliminar Nivel" disabled={formData.levelsConfig.length <= 1}><MinusCircle size={18} /></button>)}</div>))}</div>
+                                {canEditStructure && (<button onClick={addLevel} className="mt-4 w-full py-2 border-2 border-dashed border-violet-200 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-50 hover:border-violet-300 transition-all flex items-center justify-center"><Plus size={14} className="mr-1"/> Agregar Nuevo Nivel</button>)}
+                            </div>
+                            <div className="flex gap-3 pt-4 border-t border-slate-100">
+                                {!isCreating && (<button onClick={handleDelete} className="p-3 border border-rose-100 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 hover:border-rose-200 transition-all flex-shrink-0" title="Eliminar Sede Permanentemente"><Trash2 size={20} /></button>)}
+                                <button onClick={handlePreSave} className="flex-1 bg-violet-600 text-white py-3 rounded-xl font-bold hover:bg-violet-700 shadow-lg shadow-violet-200 transition-all flex justify-center items-center"><Save size={18} className="mr-2"/> {isCreating ? "Continuar" : "Guardar Cambios"}</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'confirm_user_pass' && (
+                        <div className="text-center space-y-6">
+                             <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto border border-indigo-100"><Fingerprint className="text-indigo-500" size={32}/></div>
+                            <div><h4 className="text-lg font-bold text-slate-800">Confirmación Requerida</h4><p className="text-slate-500 text-sm">Para aplicar cambios sensibles, ingresa tu contraseña de <strong>Administrador (Usuario)</strong>.</p></div>
+                            <div className="space-y-2"><input type="password" value={adminPasswordInput} onChange={(e) => setAdminPasswordInput(e.target.value)} placeholder="Tu contraseña de inicio de sesión" className="w-full p-3 border border-slate-200 rounded-xl text-center text-lg font-bold tracking-widest focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all" autoFocus />{error && <p className="text-rose-500 text-xs font-bold">{error}</p>}</div>
+                            <div className="flex gap-3"><button onClick={() => setStep('edit')} className="px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-all">Volver</button><button onClick={verifyUserPasswordAndSave} className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">Confirmar y Guardar</button></div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// --- COMPONENTE DE SELECCIÓN DE SEDE (CON FILTRO DE SEGURIDAD) ---
+const LocationSelectionScreen = ({ user, locations, onSelect, onUpdateLocation, onDeleteLocation, onLogout, onCreateLocation, onOpenProfile }) => {
+  const [editingLocation, setEditingLocation] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [verifyingAccessTo, setVerifyingAccessTo] = useState(null); 
+  const [accessPassword, setAccessPassword] = useState('');
+  const [accessError, setAccessError] = useState('');
+
+  const handleCreateClick = () => { setIsCreating(true); setEditingLocation({}); };
+  const handleSave = (data) => { if (isCreating) onCreateLocation(data); else onUpdateLocation(data); setEditingLocation(null); setIsCreating(false); };
+  const handleClose = () => { setEditingLocation(null); setIsCreating(false); };
+  const handleCardClick = (parking) => { if (parking.status === 'maintenance' || parking.status === 'inactive') return; setVerifyingAccessTo(parking); setAccessPassword(''); setAccessError(''); };
+  const verifyAccess = () => { if (!verifyingAccessTo) return; if (accessPassword === verifyingAccessTo.password) { onSelect(verifyingAccessTo); setVerifyingAccessTo(null); } else { setAccessError('Contraseña incorrecta'); } };
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] p-6 flex flex-col">
+       <header className="flex justify-between items-center mb-10 max-w-7xl mx-auto w-full">
+          <div className="flex items-center"><div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center mr-3 shadow-lg"><Car className="text-white" size={20} /></div><h1 className="font-heading font-bold text-2xl text-slate-900">ParkSmart <span className="text-slate-400 font-light">| Mis Sedes</span></h1></div>
+          <div className="flex items-center gap-4">
+             <button onClick={onOpenProfile} className="flex items-center text-right hover:bg-slate-100 p-2 rounded-xl transition-all group">
+                <div className="hidden md:block mr-3"><p className="text-sm font-bold text-slate-900 group-hover:text-violet-700 transition-colors">{user.name}</p><p className="text-xs text-slate-500">{user.role}</p></div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-inner ring-2 ring-white group-hover:ring-violet-200 transition-all">{user.name.substring(0,2).toUpperCase()}</div>
+             </button>
+             <button onClick={onLogout} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-rose-500 transition-colors ml-2"><LogOut size={18}/></button>
+          </div>
+       </header>
+
+       <div className="flex-1 max-w-7xl mx-auto w-full">
+          <div className="mb-8"><h2 className="text-3xl font-heading font-bold text-slate-900 mb-2">Selecciona un Estacionamiento</h2><p className="text-slate-500">Tienes acceso administrativo a {locations.length} ubicaciones.</p></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+             {locations.map((parking) => (
+               <div key={parking.id} className={`relative bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full ${(parking.status === 'maintenance' || parking.status === 'inactive') ? 'opacity-90' : ''}`}>
+                 <button onClick={(e) => { e.stopPropagation(); setEditingLocation(parking); setIsCreating(false); }} className="absolute top-4 right-4 z-10 bg-white/20 backdrop-blur-md hover:bg-white hover:text-slate-900 text-white p-2 rounded-lg transition-all border border-white/30 shadow-lg" title="Configurar Sede"><Settings size={18} /></button>
+                 <button onClick={() => handleCardClick(parking)} disabled={parking.status === 'maintenance' || parking.status === 'inactive'} className="text-left flex flex-col h-full w-full disabled:cursor-not-allowed">
+                    <div className={`h-32 ${parking.image} relative p-6 flex flex-col justify-end ${parking.status === 'inactive' ? 'grayscale' : ''}`}>
+                        <div className="absolute top-4 left-4">
+                        {parking.status === 'active' && (<span className="bg-emerald-400/20 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full border border-emerald-400/30 flex items-center shadow-sm"><div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></div> ACTIVO</span>)}
+                        {parking.status === 'maintenance' && (<span className="bg-amber-400/20 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full border border-amber-400/30 flex items-center shadow-sm"><div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div> MANTENIMIENTO</span>)}
+                        {parking.status === 'inactive' && (<span className="bg-slate-500/40 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full border border-slate-400/30 flex items-center shadow-sm"><div className="w-2 h-2 bg-slate-300 rounded-full mr-2"></div> INACTIVO</span>)}
+                        </div>
+                        <Building2 className="text-white/10 absolute bottom-[-10px] right-[-10px] transform rotate-[-15deg]" size={120} />
+                    </div>
+                    <div className="p-6 flex-1 flex flex-col">
+                        <h3 className="font-heading font-bold text-xl text-slate-900 mb-1 group-hover:text-violet-700 transition-colors">{parking.name}</h3>
+                        <p className="text-slate-500 text-sm flex items-start mb-6 truncate"><MapPin size={16} className="mr-1.5 mt-0.5 flex-shrink-0 text-slate-400"/>{parking.address}</p>
+                        <div className="grid grid-cols-2 gap-4 mt-auto pt-6 border-t border-slate-100"><div><p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ocupación</p><p className="text-lg font-bold text-slate-800">{parking.occupied} <span className="text-sm text-slate-400 font-normal">/ {parking.totalSpaces}</span></p></div><div className="text-right"><p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ingresos Hoy</p><p className="text-lg font-bold text-emerald-600">${parking.revenue}</p></div></div>
+                    </div>
+                 </button>
+               </div>
+             ))}
+             <button onClick={handleCreateClick} className="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50/50 transition-all h-full min-h-[280px] group"><div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-white group-hover:scale-110 transition-transform"><PlusCircle size={32} /></div><span className="font-bold">Registrar Nueva Sede</span></button>
+          </div>
+       </div>
+       
+       {verifyingAccessTo && (<div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"><div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 border border-white/20 text-center"><div className="w-16 h-16 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-violet-100"><KeyRound className="text-violet-500" size={32}/></div><h3 className="font-heading font-bold text-xl text-slate-900 mb-1">Acceder a Sede</h3><p className="text-sm text-slate-500 mb-6">Ingresa la contraseña de <strong>{verifyingAccessTo.name}</strong>.</p><input type="password" value={accessPassword} onChange={(e) => setAccessPassword(e.target.value)} placeholder="Contraseña..." className="w-full p-3 border border-slate-200 rounded-xl text-center text-lg font-bold tracking-widest focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition-all mb-2" autoFocus />{accessError && <p className="text-rose-500 text-xs font-bold mb-4">{accessError}</p>}<div className="flex gap-3 mt-4"><button onClick={() => setVerifyingAccessTo(null)} className="flex-1 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-all">Cancelar</button><button onClick={verifyAccess} className="flex-1 bg-violet-600 text-white py-3 rounded-xl font-bold hover:bg-violet-700 shadow-lg shadow-violet-200 transition-all">Entrar</button></div></div></div>)}
+       
+       <ParkingSettingsModal location={editingLocation} isOpen={!!editingLocation} isCreating={isCreating} currentUser={user} onClose={handleClose} onSave={handleSave} onUpdate={onUpdateLocation} onDelete={onDeleteLocation} />
+    </div>
+  );
+};
+
+// --- COMPONENTE PRINCIPAL ---
+export default function ParkingSystem() {
+  const [user, setUser] = useState(null); 
+  const [locations, setLocations] = useState(INITIAL_LOCATIONS); 
+  const [selectedParking, setSelectedParking] = useState(null); 
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [spots, setSpots] = useState([]);
+  const [selectedPiso, setSelectedPiso] = useState(1);
+  const [historial, setHistorial] = useState([{ id: 1, placa: 'XYZ-123', entrada: '10:00 AM', salida: '12:00 PM', total: 50 }, { id: 2, placa: 'JFK-999', entrada: '09:30 AM', salida: '10:30 AM', total: 25 }]);
+  const [selectedSpot, setSelectedSpot] = useState(null);
+  const [modalMode, setModalMode] = useState(null); 
+  const [inputPlaca, setInputPlaca] = useState('');
+  const [reservationHours, setReservationHours] = useState(1); 
+  const [paymentDetails, setPaymentDetails] = useState(null);
+  const [isEditingSpotType, setIsEditingSpotType] = useState(false);
+  const [newSpotType, setNewSpotType] = useState('');
+  const [adminPassForSpot, setAdminPassForSpot] = useState('');
+  const [spotEditError, setSpotEditError] = useState('');
+
+  useEffect(() => {
+      if (selectedParking) {
+          setSpots(generateSpotsForLocation(selectedParking.levelsConfig));
+          setSelectedPiso(selectedParking.levelsConfig?.[0]?.id || 1);
+      }
+  }, [selectedParking]);
+
+  const stats = useMemo(() => {
+    const total = spots.length;
+    const ocupados = spots.filter(s => s.estado === 'ocupado').length;
+    const reservados = spots.filter(s => s.estado === 'reservado').length;
+    const libres = spots.filter(s => s.estado === 'libre').length;
+    const ingresoDia = historial.reduce((acc, curr) => acc + curr.total, 0);
+    return { total, ocupados, reservados, libres, ingresoDia };
+  }, [spots, historial]);
+
+  const handleLogin = (userData) => setUser(userData);
+  const handleLogout = () => { setUser(null); setSelectedParking(null); setActiveTab('dashboard'); };
+  const handleUpdateUser = (updatedUser) => { setUser(updatedUser); };
+  const handleSelectParking = (parking) => { setSelectedParking(parking); };
+  const handleCreateLocation = (newLocation) => { const id = Math.max(...locations.map(l => l.id), 0) + 1; setLocations([...locations, { ...newLocation, id }]); };
+  const handleUpdateLocation = (updatedLocation) => { const updatedList = locations.map(loc => loc.id === updatedLocation.id ? updatedLocation : loc); setLocations(updatedList); if (selectedParking?.id === updatedLocation.id) { setSelectedParking(updatedLocation); } };
+  const handleDeleteLocation = (id) => { const updatedList = locations.filter(loc => loc.id !== id); setLocations(updatedList); };
+  const handleBackToLocations = () => { setSelectedParking(null); setActiveTab('dashboard'); };
+  
+  const handleSpotClick = (spot) => {
+    setSelectedSpot(spot); setInputPlaca(''); setPaymentDetails(null); setIsEditingSpotType(false); setNewSpotType(spot.tipo); setAdminPassForSpot(''); setSpotEditError('');
+    if (spot.estado === 'libre') { setModalMode('entry'); } else if (spot.estado === 'ocupado') { 
+        const now = new Date(); 
+        const hours = Math.abs(now - spot.horaEntrada) / 36e5; 
+        // Usamos la tarifa específica de la sede
+        const hourlyRate = selectedParking.hourlyRate || 25;
+        const total = Math.ceil(hours) * hourlyRate; 
+        setPaymentDetails({ hours: hours.toFixed(2), total, exitTime: now }); 
+        setModalMode('exit'); 
+    } else if (spot.estado === 'reservado') { setModalMode('entry'); }
+  };
+
+  const handleUpdateSpotType = () => { if (adminPassForSpot !== user.accountPassword) { setSpotEditError('Contraseña de administrador incorrecta'); return; } const updatedSpots = spots.map(s => { if (s.id === selectedSpot.id) { return { ...s, tipo: newSpotType }; } return s; }); setSpots(updatedSpots); setModalMode(null); };
+  const handleNewReservationClick = () => { const firstFree = spots.find(s => s.estado === 'libre' && s.tipo === 'normal') || spots.find(s => s.estado === 'libre'); if (!firstFree) { alert("¡Lo sentimos! No hay espacios disponibles."); return; } setSelectedSpot(firstFree); setInputPlaca(''); setReservationHours(2); setModalMode('new_reservation'); };
+  
+  const handleAutoAssignSpot = () => {
+    const findInPiso = (pisoNum) => { const spotsInPiso = spots.filter(s => s.piso === pisoNum && s.estado === 'libre'); if (spotsInPiso.length === 0) return null; const normal = spotsInPiso.filter(s => s.tipo === 'normal'); if (normal.length > 0) return normal[Math.floor(Math.random() * normal.length)]; const electric = spotsInPiso.filter(s => s.tipo === 'electrico'); if (electric.length > 0) return electric[Math.floor(Math.random() * electric.length)]; const disabled = spotsInPiso.filter(s => s.tipo === 'discapacitado'); if (disabled.length > 0) return disabled[Math.floor(Math.random() * disabled.length)]; return null; };
+    let foundSpot = findInPiso(selectedPiso);
+    if (!foundSpot) { for (let offset = 1; offset < PISOS; offset++) { let nextPiso = selectedPiso + offset; if (nextPiso > PISOS) nextPiso = nextPiso - PISOS; foundSpot = findInPiso(nextPiso); if (foundSpot) break; } }
+    if (foundSpot) { setSelectedPiso(foundSpot.piso); handleSpotClick(foundSpot); } else { alert("¡Estacionamiento completamente lleno! No hay espacios disponibles en ningún nivel."); }
+  };
+
+  const confirmEntry = () => { if (!inputPlaca) return; const updatedSpots = spots.map(s => { if (s.id === selectedSpot.id) return { ...s, estado: 'ocupado', placa: inputPlaca.toUpperCase(), horaEntrada: new Date() }; return s; }); setSpots(updatedSpots); setModalMode(null); };
+  const confirmExit = () => { const updatedSpots = spots.map(s => { if (s.id === selectedSpot.id) return { ...s, estado: 'libre', placa: null, horaEntrada: null }; return s; }); const newRecord = { id: Date.now(), placa: selectedSpot.placa, entrada: selectedSpot.horaEntrada.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), salida: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), total: paymentDetails.total, }; setHistorial([newRecord, ...historial]); setSpots(updatedSpots); setModalMode(null); };
+  const confirmReservation = () => { const updatedSpots = spots.map(s => { if (s.id === selectedSpot.id) { return { ...s, estado: 'reservado', placa: inputPlaca.toUpperCase() || 'RESERVA', reservationTime: new Date() }; } return s; }); setSpots(updatedSpots); setModalMode(null); };
+  const cancelReservation = (spotId) => { const updatedSpots = spots.map(s => { if(s.id === spotId) return { ...s, estado: 'libre', placa: null, reservationTime: null }; return s; }); setSpots(updatedSpots); };
+  const checkInReservation = (spotId) => { const updatedSpots = spots.map(s => { if(s.id === spotId) return { ...s, estado: 'ocupado', horaEntrada: new Date(), reservationTime: null }; return s; }); setSpots(updatedSpots); };
+
+  if (!user) return <><GlobalStyles/><LoginScreen onLogin={handleLogin} /></>;
+  if (!selectedParking) return (<><GlobalStyles/><LocationSelectionScreen user={user} locations={locations} onSelect={handleSelectParking} onUpdateLocation={handleUpdateLocation} onCreateLocation={handleCreateLocation} onDeleteLocation={handleDeleteLocation} onLogout={handleLogout} onOpenProfile={() => setIsProfileOpen(true)} /><UserProfileModal user={user} isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} onUpdate={handleUpdateUser}/></>);
+
+  const SidebarItem = ({ id, icon: Icon, label }) => (<button onClick={() => setActiveTab(id)} className={`flex items-center w-full p-3.5 mb-2 rounded-xl transition-all duration-200 font-medium ${activeTab === id ? 'bg-violet-600 text-white shadow-lg shadow-violet-900/20 translate-x-1' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white hover:translate-x-1'}`}><Icon size={20} className={`mr-3 ${activeTab === id ? 'animate-pulse' : ''}`} /><span>{label}</span></button>);
+  const StatCard = ({ title, value, subtext, icon: Icon, color }) => { const colors = { emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', iconBg: 'bg-emerald-500', border: 'border-emerald-100' }, blue: { bg: 'bg-blue-500/10', text: 'text-blue-600', iconBg: 'bg-blue-500', border: 'border-blue-100' }, amber: { bg: 'bg-amber-500/10', text: 'text-amber-600', iconBg: 'bg-amber-500', border: 'border-amber-100' }, violet: { bg: 'bg-violet-500/10', text: 'text-violet-600', iconBg: 'bg-violet-500', border: 'border-violet-100' }}; const theme = colors[color] || colors.blue; return (<div className={`bg-white p-6 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border ${theme.border} hover:shadow-lg transition-shadow`}><div className="flex justify-between items-start"><div><p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{title}</p><h3 className="text-3xl font-heading font-bold text-slate-800">{value}</h3><p className={`text-xs mt-2 font-bold flex items-center ${theme.text}`}><span className={`w-1.5 h-1.5 rounded-full mr-2 ${theme.iconBg}`}></span>{subtext}</p></div><div className={`p-3 rounded-xl text-white shadow-md ${theme.iconBg}`}><Icon size={22} /></div></div></div>); };
+  const reservedSpots = spots.filter(s => s.estado === 'reservado');
+
+  return (
+    <div className="flex h-screen bg-[#F8FAFC] font-sans overflow-hidden">
+      <GlobalStyles />
+      <aside className="w-72 bg-[#0F172A] text-white hidden md:flex flex-col p-6 transition-all duration-300 border-r border-slate-800 z-20">
+        <div className="mb-8 px-2">
+          <button onClick={handleBackToLocations} className="mb-6 flex items-center text-xs font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-wider"><ChevronLeft size={14} className="mr-1"/> Cambiar Sede</button>
+          <div className="flex items-center mb-2"><div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center mr-3 shadow-lg shadow-violet-500/30 flex-shrink-0"><Building2 className="text-white" size={20} /></div><div><h1 className="font-heading font-bold text-lg leading-tight text-white">{selectedParking.name}</h1><p className="text-[10px] text-slate-400 mt-1 truncate max-w-[140px]">{selectedParking.address}</p></div></div>
+        </div>
+        <nav className="flex-1 space-y-1"><SidebarItem id="dashboard" icon={LayoutDashboard} label="Dashboard General" /><SidebarItem id="map" icon={MapIcon} label="Gestión de Pisos" /><SidebarItem id="history" icon={History} label="Historial & Finanzas" /><SidebarItem id="reservations" icon={CalendarClock} label="Reservas Activas" /></nav>
+        <div className="mt-auto pt-6 border-t border-slate-800/50"><div className="p-4 bg-slate-800/30 rounded-2xl flex items-center justify-between group hover:bg-slate-800/50 transition-all cursor-pointer border border-white/5 backdrop-blur-sm"><button onClick={() => setIsProfileOpen(true)} className="flex items-center overflow-hidden text-left flex-1"><div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-orange-500 flex items-center justify-center text-sm font-bold shadow-inner flex-shrink-0 text-white border-2 border-slate-800">{user.name.substring(0,2).toUpperCase()}</div><div className="ml-3 overflow-hidden"><p className="text-sm font-bold truncate text-slate-100 group-hover:text-white">{user.name}</p><p className="text-xs text-slate-400 truncate">{user.role}</p></div></button><button onClick={handleLogout} className="p-2 text-slate-400 hover:text-rose-400 transition-colors ml-2"><LogOut size={18} /></button></div></div>
+      </aside>
+      <main className="flex-1 overflow-y-auto relative">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
+            <div className="md:hidden mb-6 flex justify-between items-center bg-white p-4 rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100"><div className="flex items-center"><div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center mr-2"><Car className="text-white" size={18}/></div><h1 className="font-heading font-bold text-xl text-slate-900">ParkSmart</h1></div><button onClick={handleLogout} className="p-2 bg-slate-50 rounded-full text-slate-600 hover:text-red-500"><LogOut size={20} /></button></div>
+
+            {activeTab === 'dashboard' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <header className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4"><div><h2 className="text-3xl font-heading font-bold mb-1 text-slate-900">Resumen Diario</h2><p className="text-slate-500 flex items-center text-sm"><Clock size={14} className="mr-1.5"/> Última actualización: Justo ahora</p></div></header>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"><StatCard title="Disponibilidad" value={stats.libres} subtext="Espacios Libres" icon={CheckCircle} color="emerald" /><StatCard title="En Sitio" value={stats.ocupados} subtext="Vehículos" icon={Car} color="blue" /><StatCard title="Reservas" value={stats.reservados} subtext="Pendientes" icon={Clock} color="amber" /><StatCard title="Ingresos" value={`$${stats.ingresoDia}`} subtext="Recaudado Hoy" icon={DollarSign} color="violet" /></div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-8"><div className="flex justify-between items-center mb-6"><h3 className="font-heading font-bold text-xl text-slate-900">Saturación por Piso</h3><button className="text-violet-600 text-sm font-semibold hover:underline">Ver detalles</button></div><div className="space-y-6">{selectedParking.levelsConfig?.map((level, index) => { const spotsPiso = spots.filter(s => s.piso === level.id); const ocupados = spotsPiso.filter(s => s.estado === 'ocupado').length; const porcentaje = (ocupados / level.capacity) * 100; let barColor = 'bg-violet-500'; if(porcentaje > 80) barColor = 'bg-rose-500'; else if(porcentaje < 30) barColor = 'bg-emerald-500'; return (<div key={level.id} className="group"><div className="flex justify-between text-sm mb-2"><span className="font-bold text-slate-700 group-hover:text-violet-600 transition-colors">Nivel {index + 1}</span><span className="text-slate-500 font-medium">{ocupados} / {level.capacity}</span></div><div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ease-out ${barColor}`} style={{ width: `${porcentaje}%` }}></div></div></div>) })}</div></div>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8"><h3 className="font-heading font-bold text-xl text-slate-900 mb-6">Alertas del Sistema</h3><div className="space-y-4"><div className="flex p-4 bg-rose-50 rounded-xl border border-rose-100 transition-transform hover:scale-[1.02]"><div className="bg-rose-100 p-2 rounded-lg h-fit mr-4"><AlertCircle className="text-rose-600" size={20} /></div><div><p className="text-sm font-bold text-rose-900">Tiempo Excedido</p><p className="text-xs text-rose-700 mt-1 font-medium">Placa ABC-123 (+45 min)</p></div></div><div className="flex p-4 bg-amber-50 rounded-xl border border-amber-100 transition-transform hover:scale-[1.02]"><div className="bg-amber-100 p-2 rounded-lg h-fit mr-4"><Zap className="text-amber-600" size={20} /></div><div><p className="text-sm font-bold text-amber-900">Mantenimiento Req.</p><p className="text-xs text-amber-700 mt-1 font-medium">Cargador EV - Piso 3</p></div></div></div></div></div>
+            </div>
+            )}
+
+            {activeTab === 'map' && (
+            <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8 md:mt-0">
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 mb-8">
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
+                        <div><h2 className="text-3xl font-heading font-bold text-slate-900 mb-1">Mapa Digital</h2><p className="text-slate-500 font-medium">Monitorización y control en tiempo real.</p></div>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <div className="flex bg-slate-100/80 p-1 rounded-lg border border-slate-200">{selectedParking.levelsConfig?.map((level, index) => (<button key={level.id} onClick={() => setSelectedPiso(level.id)} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${selectedPiso === level.id ? 'bg-white text-violet-700 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}>Nivel {index + 1}</button>))}</div>
+                            <div className="hidden sm:block w-px h-8 bg-slate-200 mx-1"></div>
+                            <button onClick={handleAutoAssignSpot} className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition-all shadow-lg shadow-violet-200 flex items-center justify-center group"><PlusCircle size={16} className="mr-2 group-hover:rotate-90 transition-transform duration-300" /> Asignar Lugar Rápido</button>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex-1">
+                    <div className="flex flex-wrap gap-6 mb-8 text-sm pb-6 border-b border-slate-100"><div className="flex items-center font-medium text-slate-600"><span className="w-3 h-3 rounded-full bg-slate-100 border border-slate-300 mr-2"></span> Libre</div><div className="flex items-center font-medium text-slate-600"><span className="w-3 h-3 rounded-full bg-rose-500 mr-2 shadow-sm shadow-rose-200"></span> Ocupado</div><div className="flex items-center font-medium text-slate-600"><span className="w-3 h-3 rounded-full bg-amber-400 mr-2 shadow-sm shadow-amber-200"></span> Reservado</div><div className="h-4 w-px bg-slate-200 mx-2"></div><div className="flex items-center font-medium text-purple-600"><Accessibility size={16} className="mr-1.5"/> Preferencial</div><div className="flex items-center font-medium text-teal-600"><Zap size={16} className="mr-1.5"/> Carga EV</div></div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                        {spots.filter(s => s.piso === selectedPiso).map((spot) => {
+                            const typeConfig = Object.values(TYPES).find(t => t.id === spot.tipo);
+                            const Icon = typeConfig.icon;
+                            let stateStyles = "bg-white border-slate-200 hover:border-violet-400 hover:shadow-md text-slate-400"; let iconColor = "text-slate-300"; let badgeContent = <span className="text-emerald-600 font-bold text-xs">LIBRE</span>;
+                            if (spot.estado === 'ocupado') { stateStyles = "bg-rose-50 border-rose-200 text-rose-700 shadow-sm"; iconColor = "text-rose-500"; badgeContent = <span className="text-rose-700 font-bold text-xs font-mono tracking-wider">{spot.placa}</span>; } else if (spot.estado === 'reservado') { stateStyles = "bg-amber-50 border-amber-200 text-amber-700 shadow-sm"; iconColor = "text-amber-500"; badgeContent = <span className="text-amber-700 font-bold text-xs">RESERVA</span>; }
+                            return (<button key={spot.id} onClick={() => handleSpotClick(spot)} className={`relative aspect-square rounded-2xl border-2 transition-all duration-200 flex flex-col justify-between p-4 group ${stateStyles}`}><div className="flex justify-end w-full"><span className="text-[10px] font-bold opacity-50 bg-black/5 px-1.5 py-0.5 rounded">{spot.id}</span></div><div className={`flex-1 flex items-center justify-center transition-transform group-hover:scale-105 duration-200`}>{spot.estado === 'ocupado' ? <Car size={24} className={iconColor} /> : <Icon size={24} className={iconColor} />}</div><div className="w-full px-2 py-1.5 rounded bg-white/60 backdrop-blur-sm text-center shadow-sm border border-white/20">{badgeContent}</div>{spot.tipo !== 'normal' && (<div className={`absolute top-3 left-3 p-1.5 rounded-lg ${typeConfig.color}`}><typeConfig.icon size={12} /></div>)}</button>)
+                        })}
+                    </div>
+                </div>
+            </div>
+            )}
+
+            {activeTab === 'history' && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8 md:mt-0">
+                <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4"><div><h3 className="font-heading font-bold text-slate-900 text-xl">Transacciones Recientes</h3><p className="text-slate-500 text-sm">Registro de todos los movimientos financieros.</p></div><div className="flex gap-3"><div className="relative group"><Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-violet-600" size={18} /><input type="text" placeholder="Buscar placa..." className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 focus:bg-white transition-all w-64"/></div><button className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 hover:bg-white hover:shadow-md text-slate-600 transition-all"><Filter size={18}/></button></div></div>
+                <div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead><tr className="text-xs font-bold tracking-wider text-slate-400 uppercase border-b border-slate-100"><th className="px-6 py-4 font-medium"># Ref</th><th className="px-6 py-4 font-medium">Vehículo</th><th className="px-6 py-4 font-medium">Horario</th><th className="px-6 py-4 font-medium text-right">Total</th></tr></thead><tbody className="divide-y divide-slate-50">{historial.map((item) => (<tr key={item.id} className="group hover:bg-slate-50/50 transition-colors"><td className="px-6 py-4"><span className="font-mono text-xs text-slate-400">#{item.id.toString().padStart(4, '0')}</span></td><td className="px-6 py-4"><div className="flex items-center"><div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-slate-400 group-hover:bg-white group-hover:shadow-sm transition-all"><Car size={16}/></div><div><div className="font-mono font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-sm tracking-wide">{item.placa}</div></div></div></td><td className="px-6 py-4"><div className="flex flex-col space-y-1"><div className="flex items-center text-xs"><span className="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span><span className="text-slate-400 mr-2">Entrada:</span><span className="font-medium text-slate-600">{item.entrada}</span></div><div className="flex items-center text-xs"><span className="w-2 h-2 rounded-full bg-slate-300 mr-2"></span><span className="text-slate-400 mr-2">Salida:</span><span className="font-medium text-slate-600">{item.salida}</span></div></div></td><td className="px-6 py-4 text-right"><span className="text-lg font-bold text-slate-800 group-hover:text-violet-600 transition-colors">${item.total}.00</span></td></tr>))}</tbody></table></div>
+            </div>
+            )}
+
+            {activeTab === 'reservations' && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8 md:mt-0">
+                    <header className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4"><div><h2 className="text-3xl font-heading font-bold mb-1 text-slate-900">Reservas Activas</h2><p className="text-slate-500 flex items-center text-sm"><CalendarClock size={14} className="mr-1.5"/> Gestión de llegadas pendientes</p></div><button onClick={handleNewReservationClick} className="bg-white text-slate-900 hover:bg-slate-100 px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center shadow-xl hover:shadow-2xl transform hover:-translate-y-0.5"><PlusCircle size={18} className="mr-2 text-violet-600" /> Nueva Reserva</button></header>
+                    {reservedSpots.length === 0 ? (<div className="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border-2 border-dashed border-slate-200"><div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4"><CalendarClock size={32} className="text-slate-400"/></div><h3 className="text-xl font-bold text-slate-800 mb-1">No hay reservas activas</h3><p className="text-slate-400 text-sm">Crea una nueva reserva para verla aquí.</p></div>) : (<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{reservedSpots.map(spot => (<div key={spot.id} className="bg-white rounded-2xl p-6 shadow-lg shadow-slate-900/5 border border-slate-100 flex flex-col justify-between h-full hover:shadow-xl transition-all"><div><div className="flex justify-between items-start mb-4"><div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold flex items-center border border-amber-100"><Clock size={12} className="mr-1.5"/> RESERVADO</div><div className="text-right"><span className="block text-xs text-slate-400 font-bold">ESPACIO</span><span className="text-lg font-heading font-bold text-slate-800">{spot.id}</span></div></div><div className="text-center py-4 border-b border-slate-50 mb-4"><span className="block text-xs text-slate-400 font-bold tracking-widest uppercase mb-1">Vehículo</span><span className="text-4xl font-mono font-bold text-slate-800 tracking-wider">{spot.placa}</span></div><div className="space-y-2 text-sm"><div className="flex justify-between items-center text-slate-600"><span className="flex items-center"><MapIcon size={14} className="mr-2 text-slate-400"/> Ubicación</span><span className="font-bold">Piso {spot.piso}</span></div><div className="flex justify-between items-center text-slate-600"><span className="flex items-center"><CalendarCheck size={14} className="mr-2 text-slate-400"/> Creada</span><span className="font-medium">{spot.reservationTime ? spot.reservationTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Reciente'}</span></div></div></div><div className="grid grid-cols-2 gap-3 mt-6"><button onClick={() => cancelReservation(spot.id)} className="flex items-center justify-center py-2.5 rounded-xl border border-rose-100 text-rose-600 hover:bg-rose-50 font-bold text-sm transition-colors"><XCircle size={16} className="mr-2"/> Cancelar</button><button onClick={() => checkInReservation(spot.id)} className="flex items-center justify-center py-2.5 rounded-xl bg-violet-600 text-white hover:bg-violet-700 font-bold text-sm transition-colors shadow-lg shadow-violet-200"><CheckCircle size={16} className="mr-2"/> Ingresar</button></div></div>))}</div>)}
+                </div>
+            )}
+        </div>
+      </main>
+
+      {/* MODALES DE ACCIÓN - STYLED */}
+      {modalMode && selectedSpot && (
+        <div className="fixed inset-0 bg-[#0F172A]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-300 border border-white/20 flex flex-col max-h-[90vh]">
+            <div className="bg-slate-900 p-8 text-white relative overflow-hidden flex-shrink-0">
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-violet-500/30 rounded-full blur-2xl"></div>
+                <div className="flex justify-between items-start relative z-10"><div><p className="text-violet-300 text-xs font-bold uppercase tracking-widest mb-2">{isEditingSpotType ? "Configuración Avanzada" : "Acción Requerida"}</p><h3 className="font-heading font-bold text-2xl">{isEditingSpotType ? 'Modificar Espacio' : modalMode === 'entry' ? 'Entrada Vehículo' : modalMode === 'exit' ? 'Procesar Salida' : modalMode === 'reserve' ? 'Confirmar Reserva' : 'Nueva Reserva'}</h3><p className="text-slate-400 text-sm mt-1 flex items-center"><MapIcon size={14} className="mr-1"/> Piso {selectedSpot.piso} • Espacio <span className="text-white font-mono ml-1 bg-slate-800 px-1 rounded">{selectedSpot.id}</span></p></div><div className="flex gap-2">{!isEditingSpotType && modalMode === 'entry' && (<button onClick={() => setIsEditingSpotType(true)} className="text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 p-2 rounded-full transition-all" title="Configurar Tipo de Espacio"><Edit3 size={20} /></button>)}<button onClick={() => setModalMode(null)} className="text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 p-2 rounded-full transition-all">✕</button></div></div>
+            </div>
+            <div className="p-8 overflow-y-auto">
+                {isEditingSpotType ? (<div className="space-y-6 animate-in slide-in-from-right-4 duration-300"><div className="bg-amber-50 border border-amber-100 p-4 rounded-xl mb-4 text-sm text-amber-800 flex items-start"><AlertTriangle className="flex-shrink-0 mr-2 mt-0.5" size={16}/><span>Estás a punto de cambiar la configuración física de este espacio. Se requiere autorización de administrador.</span></div><div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Tipo de Espacio</label><div className="grid grid-cols-1 gap-3">{Object.values(TYPES).map((type) => (<button key={type.id} onClick={() => setNewSpotType(type.id)} className={`flex items-center p-3 rounded-xl border-2 transition-all ${newSpotType === type.id ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-slate-100 hover:border-slate-200 text-slate-600'}`}><div className={`p-2 rounded-lg mr-3 ${type.id === newSpotType ? 'bg-violet-200 text-violet-700' : 'bg-slate-100 text-slate-500'}`}><type.icon size={20} /></div><span className="font-bold text-sm">{type.label}</span>{newSpotType === type.id && <CheckCircle className="ml-auto text-violet-600" size={20}/>}</button>))}</div></div><div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Contraseña de Administrador</label><input type="password" value={adminPassForSpot} onChange={(e) => setAdminPassForSpot(e.target.value)} placeholder="Confirma tu identidad" className="w-full p-3 border border-slate-200 rounded-xl text-center text-lg font-bold tracking-widest focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition-all"/>{spotEditError && <p className="text-rose-500 text-xs font-bold mt-2">{spotEditError}</p>}</div><div className="flex gap-3 pt-2"><button onClick={() => setIsEditingSpotType(false)} className="px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-all">Cancelar</button><button onClick={handleUpdateSpotType} className="flex-1 bg-violet-600 text-white py-3 rounded-xl font-bold hover:bg-violet-700 shadow-lg shadow-violet-200 transition-all">Guardar Cambios</button></div></div>) : (<>{(modalMode === 'entry' || modalMode === 'new_reservation') && (<div className="space-y-6"><div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Matrícula del Vehículo</label><input autoFocus type="text" value={inputPlaca} onChange={(e) => setInputPlaca(e.target.value.toUpperCase())} placeholder="ABC-123" className="w-full text-3xl font-mono font-bold uppercase p-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-violet-500 focus:ring-0 focus:bg-white outline-none text-center tracking-[0.2em] text-slate-800 placeholder:text-slate-300 transition-all"/></div>{modalMode === 'new_reservation' && (<div className="bg-violet-50 p-5 rounded-xl border border-violet-100"><label className="block text-xs font-bold text-violet-800 uppercase tracking-wider mb-3 flex items-center"><Timer size={14} className="mr-2"/> Duración Estimada</label><div className="flex items-center space-x-4"><input type="range" min="1" max="24" value={reservationHours} onChange={(e) => setReservationHours(parseInt(e.target.value))} className="flex-1 h-2 bg-violet-200 rounded-lg appearance-none cursor-pointer accent-violet-600"/><div className="bg-white px-3 py-1 rounded-lg shadow-sm border border-violet-100 font-bold text-violet-700 min-w-[3.5rem] text-center">{reservationHours}h</div></div><div className="mt-4 flex justify-between items-center text-sm pt-3 border-t border-violet-200/50"><span className="text-violet-700 font-medium">Tarifa estimada</span><span className="font-heading font-bold text-xl text-violet-900">${(reservationHours * (selectedParking.hourlyRate || 25)).toFixed(2)}</span></div></div>)}<div className="grid grid-cols-1 gap-4 pt-2">{modalMode === 'entry' ? (<div className="grid grid-cols-2 gap-4"><button onClick={confirmEntry} className="bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 shadow-lg shadow-slate-300/50 transform hover:-translate-y-0.5 transition-all">Registrar</button><button onClick={() => { setReservationHours(2); setModalMode('new_reservation'); }} className="bg-white text-amber-600 py-4 rounded-xl font-bold border-2 border-amber-100 hover:bg-amber-50 hover:border-amber-200 transition-all">Reservar</button></div>) : (<button onClick={confirmReservation} className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-violet-500/30 transform hover:-translate-y-0.5 transition-all flex items-center justify-center"><CheckCircle size={20} className="mr-2" /> Confirmar Reserva</button>)}</div></div>)}{modalMode === 'exit' && paymentDetails && (<div className="space-y-5"><div className="text-center relative py-2"><p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-1">Total a Cobrar</p><div className="flex items-center justify-center text-slate-900"><span className="text-2xl font-bold text-slate-400 mr-1">$</span><h2 className="text-5xl font-heading font-bold tracking-tighter">{paymentDetails.total}</h2><span className="text-xl font-bold text-slate-400 mt-4">.00</span></div><div className="flex items-center justify-center mt-2 gap-2 text-xs font-medium text-slate-500"><span className="bg-slate-100 px-2 py-0.5 rounded">{paymentDetails.hours}h</span><span>×</span><span>${selectedParking.hourlyRate || 25}/h</span></div></div><div className="border-t border-b border-slate-100 py-4 space-y-3"><div className="flex justify-between items-center text-sm"><span className="text-slate-500 flex items-center gap-2"><Car size={14}/> Vehículo</span><span className="font-bold font-mono text-slate-800 bg-slate-50 px-2 rounded">{selectedSpot.placa}</span></div><div className="flex justify-between items-center text-sm"><span className="text-slate-500 flex items-center gap-2"><Clock size={14}/> Entrada</span><span className="text-slate-700">{selectedSpot.horaEntrada?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div><div className="flex justify-between items-center text-sm"><span className="text-slate-500 flex items-center gap-2"><LogOut size={14}/> Salida</span><span className="text-slate-700">{paymentDetails.exitTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div></div><button onClick={confirmExit} className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-500 shadow-lg shadow-emerald-200 transition-all flex justify-center items-center gap-2 group"><DollarSign size={18} className="group-hover:scale-110 transition-transform"/><span>Confirmar Cobro</span></button></div>)}</>)}
+            </div>
+          </div>
+        </div>
+      )}
+      
+       {/* Modal de Perfil de Usuario */}
+        <UserProfileModal user={user} isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} onUpdate={handleUpdateUser}/>
+    </div>
+  );
+}

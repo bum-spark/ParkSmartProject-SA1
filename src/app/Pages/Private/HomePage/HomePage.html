@@ -1,0 +1,109 @@
+<div class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100">
+  <!-- Header usando NavbarComponent -->
+  <app-navbar
+    [nombreUsuario]="nombreUsuario() || 'Usuario'"
+    (onAbrirDrawer)="abrirDrawer()"
+    (onCerrarSesion)="cerrarSesion()"
+  />
+
+  <!-- Content -->
+  <main class="container mx-auto px-4 py-8">
+    <!-- Titulo -->
+    <div class="text-center mb-10">
+      <h1 class="text-3xl font-bold text-stone-800 mb-2">Selecciona una Sede</h1>
+      <p class="text-stone-500">Elige el estacionamiento que deseas administrar</p>
+    </div>
+
+    <!-- Estados de carga y error -->
+    @if (error()) {
+      <div class="max-w-md mx-auto">
+        <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-red-600 mb-4">{{ error() }}</p>
+          <button (click)="cargarSedes()" class="btn btn-outline border-red-500 text-red-600 hover:bg-red-500 hover:text-white">
+            Reintentar
+          </button>
+        </div>
+      </div>
+    } @else {
+      <!-- Grid de sedes usando SedesGridComponent -->
+      <app-sedes-grid
+        [sedes]="sedes()"
+        [esAdmin]="esAdmin()"
+        [accesosValidos]="accesosValidosMap()"
+        [cargando]="cargando()"
+        (onAcceder)="abrirModalAcceso($event)"
+        (onEditar)="abrirModalEditarSede($event.sede, $event.event)"
+        (onNuevaSede)="abrirModalCrearSede()"
+      />
+    }
+  </main>
+</div>
+
+<!-- Modal de acceso usando ModalAccesoSedeComponent -->
+<app-modal-acceso-sede
+  [isOpen]="modalAccesoAbierto()"
+  [nombreSede]="sedeSeleccionada()?.nombre || ''"
+  [verificando]="verificandoAcceso()"
+  [error]="errorAcceso() || ''"
+  (onConfirmar)="verificarAccesoConPassword($event)"
+  (onCancelar)="cerrarModalAcceso()"
+/>
+
+<!-- Drawer de Configuracion usando DrawerConfiguracionComponent -->
+<app-drawer-configuracion
+  [isOpen]="drawerAbierto()"
+  [nombreUsuario]="nombreUsuario() || ''"
+  [emailUsuario]="perfilEmail()"
+  [rolUsuario]="$any(rolUsuario())"
+  [idUsuario]="idUsuario()"
+  [guardandoPerfil]="guardandoPerfil()"
+  [errorPerfil]="errorPerfil() || ''"
+  [exitoPerfil]="exitoPerfil()"
+  [guardandoPassword]="guardandoPassword()"
+  [errorPassword]="errorPassword() || ''"
+  [exitoPassword]="exitoPassword()"
+  [usuarios]="usuarios()"
+  [cargandoUsuarios]="cargandoUsuarios()"
+  [errorUsuarios]="errorUsuarios() || ''"
+  (onCerrar)="cerrarDrawer()"
+  (onGuardarPerfil)="handleGuardarPerfil($event)"
+  (onGuardarPassword)="handleGuardarPassword($event)"
+  (onCambiarRol)="handleCambiarRol($event)"
+  (onCargarUsuarios)="cargarUsuarios()"
+/>
+
+<!-- Modal Crear Sede -->
+<app-modal-crear-sede
+  [isOpen]="modalCrearSedeAbierto()"
+  [creando]="creandoSede()"
+  [error]="errorCrearSede() || ''"
+  (onCrear)="handleCrearSede($event)"
+  (onCerrar)="cerrarModalCrearSede()"
+/>
+
+<!-- Modal Editar Sede -->
+<app-modal-editar-sede
+  [isOpen]="modalEditarSedeAbierto()"
+  [sede]="sedeEditando()"
+  [editando]="editandoSede()"
+  [error]="errorEditarSede() || ''"
+  [exito]="exitoEditarSede()"
+  [errorCambiarEstado]="errorCambiarEstado() || ''"
+  [cambiandoEstado]="cambiandoEstado()"
+  (onGuardar)="handleGuardarEdicion($event)"
+  (onCambiarEstado)="handleCambiarEstado($event)"
+  (onCerrar)="cerrarModalEditarSede()"
+/>
+
+<!-- Modal Verificar Acceso para Edicion -->
+<app-modal-acceso-edicion
+  [isOpen]="modalAccesoEdicionAbierto()"
+  [sede]="sedePendienteEdicion()"
+  [verificando]="verificandoAccesoEdicion()"
+  [error]="errorAccesoEdicion() || ''"
+  (onVerificar)="handleVerificarAccesoEdicion($event)"
+  (onCerrar)="cerrarModalAccesoEdicion()"
+/>

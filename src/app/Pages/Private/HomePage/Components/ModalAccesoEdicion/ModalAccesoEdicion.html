@@ -1,0 +1,116 @@
+@if (isOpen()) {
+  <div class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="cerrar()">
+    <div class="bg-white border border-stone-200 rounded-2xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <!-- Header modal -->
+      <div class="p-6 border-b border-stone-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-stone-800">Acceso para Edición</h3>
+              <p class="text-sm text-stone-500">{{ sede()?.nombre }}</p>
+            </div>
+          </div>
+          <button (click)="cerrar()" class="btn btn-ghost btn-sm btn-circle text-stone-400 hover:text-stone-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Body modal -->
+      <div class="p-6">
+        <!-- Mensaje informativo -->
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+          <div class="flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-sm text-amber-800">
+              Ingresa la contraseña de acceso de la sede para poder editarla. 
+              Esta es la contraseña configurada al crear la sede.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Error -->
+        @if (error()) {
+          <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p class="text-red-600 text-sm text-center">{{ error() }}</p>
+          </div>
+        }
+        
+        <!-- Campo de contraseña -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text text-stone-600">Contraseña de acceso *</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            </span>
+            <input 
+              [type]="mostrarPassword() ? 'text' : 'password'" 
+              [ngModel]="passwordAcceso()" 
+              (ngModelChange)="passwordAcceso.set($event)"
+              (keyup.enter)="verificar()"
+              placeholder="Ingresa la contraseña de acceso"
+              class="input input-bordered w-full pl-10 pr-10 bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+              [disabled]="verificando()"
+              autofocus
+            />
+            <button 
+              type="button" 
+              (click)="toggleMostrarPassword()"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 text-amber-600 hover:text-amber-700"
+            >
+              @if (mostrarPassword()) {
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer modal -->
+      <div class="p-6 border-t border-stone-200 flex gap-3">
+        <button 
+          (click)="cerrar()" 
+          class="btn flex-1 bg-stone-200 hover:bg-stone-300 text-stone-700 border-0"
+          [disabled]="verificando()"
+        >
+          Cancelar
+        </button>
+        <button 
+          (click)="verificar()" 
+          class="btn flex-1 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0"
+          [disabled]="verificando() || !passwordAcceso().trim()"
+        >
+          @if (verificando()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            Verificando...
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+            </svg>
+            Verificar Acceso
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

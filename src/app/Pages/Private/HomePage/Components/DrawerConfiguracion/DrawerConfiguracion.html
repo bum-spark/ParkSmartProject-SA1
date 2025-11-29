@@ -1,0 +1,131 @@
+@if (isOpen()) {
+  <div class="fixed inset-0 z-50 flex">
+    <!-- Overlay -->
+    <div class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm" (click)="cerrar()"></div>
+    
+    <!-- Drawer Panel -->
+    <div class="fixed right-0 top-0 h-full w-full max-w-4xl bg-white border-l border-stone-200 shadow-2xl flex animate-slide-in-right">
+      <!-- Sidebar de navegación -->
+      <div class="w-40 bg-stone-50 border-r border-stone-200 flex flex-col">
+        <!-- Header del sidebar -->
+        <div class="p-4 border-b border-stone-200">
+          <h2 class="text-lg font-semibold text-stone-800">Configuración</h2>
+          <p class="text-xs text-stone-500 mt-1">Administra tu cuenta</p>
+        </div>
+        
+        <!-- Menu -->
+        <ul class="menu p-2 flex-1">
+          <li>
+            <button 
+              (click)="cambiarTab('perfil')"
+              class="flex items-center gap-3"
+              [ngClass]="tabActual() === 'perfil' ? 'bg-amber-500/20 text-amber-700' : 'text-stone-600 hover:bg-stone-200'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Mi Perfil
+            </button>
+          </li>
+          <li>
+            <button 
+              (click)="cambiarTab('password')"
+              [ngClass]="tabActual() === 'password' ? 'bg-amber-500/20 text-amber-700' : 'text-stone-600 hover:bg-stone-200'"
+              class="flex items-center gap-3"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Contraseña
+            </button>
+          </li>
+          @if (esAdminOGerente()) {
+            <li class="mt-4">
+              <div class="text-xs uppercase text-stone-400 px-2 py-1">Administración</div>
+            </li>
+            <li>
+              <button 
+                (click)="cambiarTab('usuarios')"
+                [ngClass]="tabActual() === 'usuarios' ? 'bg-amber-500/20 text-amber-700' : 'text-stone-600 hover:bg-stone-200'"
+                class="flex items-center gap-3"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                Usuarios
+              </button>
+            </li>
+          }
+        </ul>
+        
+        <!-- Footer del sidebar -->
+        <div class="p-4 border-t border-stone-200">
+          <div class="flex items-center gap-3">
+            <div class="avatar avatar-placeholder">
+              <div class="bg-amber-500/20 text-amber-700 w-8 rounded-full">
+                <span class="text-xs font-semibold">{{ getIniciales() }}</span>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-stone-800 truncate">{{ nombreUsuario() }}</p>
+              @if (rolUsuario()) {
+                <div class="badge {{ getRolBadgeClass($any(rolUsuario())) }} badge-xs mt-1">{{ rolUsuario() }}</div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Contenido principal del drawer -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header del contenido -->
+        <div class="p-4 border-b border-stone-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-stone-800">{{ getTituloTab() }}</h3>
+          <button (click)="cerrar()" class="btn btn-ghost btn-sm btn-circle text-stone-400 hover:text-stone-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Contenido según tab -->
+        <div class="flex-1 overflow-y-auto p-6">
+          <!-- TAB: PERFIL -->
+          @if (tabActual() === 'perfil') {
+            <app-perfil-tab
+              [nombre]="nombreUsuario()"
+              [email]="emailUsuario()"
+              [guardando]="guardandoPerfil()"
+              [error]="errorPerfil()"
+              [exito]="exitoPerfil()"
+              (onGuardar)="handleGuardarPerfil($event)"
+            />
+          }
+          
+          <!-- TAB: CONTRASEÑA -->
+          @if (tabActual() === 'password') {
+            <app-password-tab
+              [guardando]="guardandoPassword()"
+              [error]="errorPassword()"
+              [exito]="exitoPassword()"
+              (onGuardar)="handleGuardarPassword($event)"
+            />
+          }
+          
+          <!-- TAB: USUARIOS -->
+          @if (tabActual() === 'usuarios' && esAdminOGerente()) {
+            <app-usuarios-tab
+              [usuarios]="usuarios()"
+              [cargando]="cargandoUsuarios()"
+              [error]="errorUsuarios()"
+              [esAdmin]="esAdmin()"
+              [idUsuarioActual]="idUsuario()"
+              (onCambiarRol)="handleCambiarRol($event)"
+              (onReintentar)="handleReintentarUsuarios()"
+            />
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}

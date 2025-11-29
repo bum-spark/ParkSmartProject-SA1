@@ -1,0 +1,65 @@
+<div class="max-w-md">
+  <p class="text-stone-500 text-sm mb-6">Actualiza tu información personal</p>
+  
+  @if (error()) {
+    <div role="alert" class="alert alert-error bg-red-50 border-red-200 mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 stroke-red-600" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="text-red-600 text-sm">{{ error() }}</span>
+    </div>
+  }
+  
+  @if (exito()) {
+    <div role="alert" class="alert alert-success bg-green-50 border-green-200 mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 stroke-green-600" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="text-green-600 text-sm">Perfil actualizado correctamente</span>
+    </div>
+  }
+  
+  <div class="space-y-4">
+    <!-- Nombre -->
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text text-stone-600 font-medium">Nombre completo</span>
+      </label>
+      <input 
+        type="text" 
+        [ngModel]="nombreLocal()" 
+        (ngModelChange)="nombreLocal.set($event)"
+        class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 focus:border-amber-500"
+        [disabled]="guardando()"
+      />
+    </div>
+    
+    <!-- Email -->
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text text-stone-600 font-medium">Correo electrónico</span>
+      </label>
+      <input 
+        type="email" 
+        [ngModel]="emailLocal()" 
+        (ngModelChange)="emailLocal.set($event)"
+        class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 focus:border-amber-500"
+        [disabled]="guardando()"
+      />
+    </div>
+    
+    <!-- Boton guardar -->
+    <button 
+      (click)="guardar()" 
+      class="btn bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 w-full mt-6"
+      [disabled]="guardando()"
+    >
+      @if (guardando()) {
+        <span class="loading loading-ring loading-sm"></span>
+        Guardando...
+      } @else {
+        Guardar Cambios
+      }
+    </button>
+  </div>
+</div>

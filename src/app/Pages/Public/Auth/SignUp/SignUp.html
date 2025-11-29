@@ -1,0 +1,234 @@
+﻿<div class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100 flex items-center justify-center p-4">
+  <!-- Modal de iniciando sesion -->
+  @if (iniciandoSesion()) {
+    <div class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div class="bg-white rounded-2xl border border-stone-200 p-8 shadow-2xl text-center max-w-sm mx-4">
+        <span class="loading loading-ring loading-lg text-amber-500"></span>
+        <h3 class="text-xl font-semibold text-stone-800 mt-4 mb-2">Iniciando sesión...</h3>
+        <p class="text-stone-500 text-sm">Preparando tu cuenta, espera un momento</p>
+      </div>
+    </div>
+  }
+
+  <!-- Card principal -->
+  <div class="w-full max-w-md">
+    <!-- Logo y titulo -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl mb-4 shadow-lg shadow-amber-500/25">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+        </svg>
+      </div>
+      <h1 class="text-3xl font-bold text-stone-800 mb-2">ParkSmart</h1>
+      <p class="text-stone-500">Sistema de Gestión de Estacionamientos</p>
+    </div>
+
+    <!-- Card de registro -->
+    <div class="bg-white/80 backdrop-blur-xl rounded-2xl border border-stone-200 p-8 shadow-xl shadow-stone-200/50">
+      @if (exito()) {
+        <!-- Alert de exito -->
+        <div role="alert" class="alert alert-success bg-green-50 border-green-200 mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-green-600" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <h3 class="font-bold text-green-700">¡Cuenta creada!</h3>
+            <div class="text-xs text-green-600">Bienvenido a ParkSmart</div>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 class="text-xl font-semibold text-stone-800 mb-2">¡Registro Exitoso!</h2>
+          <p class="text-stone-500 mb-4">
+            Tu cuenta ha sido creada correctamente.
+          </p>
+          
+          <!-- Loading de redireccion -->
+          <div class="flex items-center justify-center gap-3 text-amber-600 mb-6">
+            <span class="loading loading-ring loading-md"></span>
+            <span class="text-sm">Iniciando sesión automáticamente...</span>
+          </div>
+
+          <button 
+            (click)="irALogin()"
+            class="btn btn-ghost text-stone-500 hover:text-stone-700"
+          >
+            O ir a iniciar sesión manualmente
+          </button>
+        </div>
+      } @else {
+        <h2 class="text-xl font-semibold text-stone-800 mb-6 text-center">Crear Cuenta</h2>
+
+        <!-- Alert de error -->
+        @if (error()) {
+          <div role="alert" class="alert alert-error bg-red-50 border-red-200 mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-red-600" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-red-600">{{ error() }}</span>
+          </div>
+        }
+
+        <!-- Alert info -->
+        <div role="alert" class="alert bg-amber-50 border-amber-200 mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-amber-600" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="text-amber-700 text-sm">Crea tu cuenta para acceder al sistema de gestión de estacionamientos.</span>
+        </div>
+
+        <!-- Formulario -->
+        <form (ngSubmit)="onSubmit()" class="space-y-5">
+          <!-- Nombre Completo -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-stone-600 font-medium">Nombre completo</span>
+            </label>
+            <label class="input input-bordered w-full flex items-center gap-2 bg-stone-50 border-stone-300 focus-within:border-amber-500 focus-within:outline-amber-500 validator">
+              <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </g>
+              </svg>
+              <input 
+                type="text" 
+                [ngModel]="nombreCompleto()" 
+                (ngModelChange)="nombreCompleto.set($event)"
+                name="nombreCompleto"
+                placeholder="Juan Pérez" 
+                class="grow bg-transparent text-stone-800 placeholder-stone-400"
+                [disabled]="cargando()"
+                autocomplete="name"
+                required
+                minlength="3"
+              />
+            </label>
+            <p class="validator-hint text-red-500 text-xs mt-1 hidden">El nombre debe tener al menos 3 caracteres</p>
+          </div>
+
+          <!-- Email -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-stone-600 font-medium">Correo electrónico</span>
+            </label>
+            <label class="input input-bordered w-full flex items-center gap-2 bg-stone-50 border-stone-300 focus-within:border-amber-500 focus-within:outline-amber-500 validator">
+              <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+                  <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                </g>
+              </svg>
+              <input 
+                type="email" 
+                [ngModel]="email()" 
+                (ngModelChange)="email.set($event)"
+                name="email"
+                placeholder="tu@email.com" 
+                class="grow bg-transparent text-stone-800 placeholder-stone-400"
+                [disabled]="cargando()"
+                autocomplete="email"
+                required
+              />
+            </label>
+            <p class="validator-hint text-red-500 text-xs mt-1 hidden">Ingresa un correo electrónico válido</p>
+          </div>
+
+          <!-- Password -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-stone-600 font-medium">Contraseña</span>
+            </label>
+            <label class="input input-bordered w-full flex items-center gap-2 bg-stone-50 border-stone-300 focus-within:border-amber-500 focus-within:outline-amber-500 validator">
+              <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+                  <path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
+                  <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle>
+                </g>
+              </svg>
+              <input 
+                type="password" 
+                [ngModel]="password()" 
+                (ngModelChange)="password.set($event)"
+                name="password"
+                placeholder="Mínimo 6 caracteres" 
+                class="grow bg-transparent text-stone-800 placeholder-stone-400"
+                [disabled]="cargando()"
+                autocomplete="new-password"
+                required
+                minlength="6"
+              />
+            </label>
+            <p class="validator-hint text-red-500 text-xs mt-1 hidden">La contraseña debe tener al menos 6 caracteres</p>
+          </div>
+
+          <!-- Confirmar Password -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-stone-600 font-medium">Confirmar contraseña</span>
+            </label>
+            <label class="input input-bordered w-full flex items-center gap-2 bg-stone-50 border-stone-300 focus-within:border-amber-500 focus-within:outline-amber-500 validator">
+              <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <path d="m9 12 2 2 4-4"></path>
+                </g>
+              </svg>
+              <input 
+                type="password" 
+                [ngModel]="confirmarPassword()" 
+                (ngModelChange)="confirmarPassword.set($event)"
+                name="confirmarPassword"
+                placeholder="Repite tu contraseña" 
+                class="grow bg-transparent text-stone-800 placeholder-stone-400"
+                [disabled]="cargando()"
+                autocomplete="new-password"
+                required
+              />
+            </label>
+            <p class="validator-hint text-red-500 text-xs mt-1 hidden">Las contraseñas deben coincidir</p>
+          </div>
+
+          <!-- Boton submit -->
+          <button 
+            type="submit" 
+            class="btn w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25 transition-all duration-200"
+            [disabled]="cargando()"
+          >
+            @if (cargando()) {
+              <span class="loading loading-ring loading-sm"></span>
+              Registrando...
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              Registrarme
+            }
+          </button>
+        </form>
+
+        <!-- Divider -->
+        <div class="divider text-stone-400 my-6">o</div>
+
+        <!-- Link a login -->
+        <p class="text-center text-stone-500">
+          ¿Ya tienes cuenta? 
+          <a routerLink="/auth/signin" class="text-amber-600 hover:text-amber-700 font-medium transition-colors">
+            Inicia sesión
+          </a>
+        </p>
+      }
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-stone-400 text-sm mt-6">
+      © 2024 ParkSmart. Todos los derechos reservados.
+    </p>
+  </div>
+</div>
+

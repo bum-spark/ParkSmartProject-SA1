@@ -1,0 +1,130 @@
+<div>
+  <p class="text-stone-500 text-sm mb-6">Administra los usuarios del sistema y sus roles</p>
+  
+  @if (cargando()) {
+    <div class="flex justify-center py-10">
+      <span class="loading loading-ring loading-lg text-amber-500"></span>
+    </div>
+  } @else if (error()) {
+    <div role="alert" class="alert alert-error bg-red-50 border-red-200">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 stroke-red-600" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="text-red-600 text-sm">{{ error() }}</span>
+      <button (click)="recargar()" class="btn btn-sm btn-ghost text-red-600">Reintentar</button>
+    </div>
+  } @else {
+    <!-- Tabla de usuarios -->
+    <div class="overflow-x-auto rounded-xl border border-stone-200">
+      <table class="table w-full">
+        <thead class="bg-stone-100">
+          <tr>
+            <th class="text-stone-600 bg-stone-100">Nombre</th>
+            <th class="text-stone-600 bg-stone-100">Email</th>
+            <th class="text-stone-600 bg-stone-100">Rol</th>
+            <th class="text-stone-600 bg-stone-100 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (usuario of usuarios(); track usuario.usuarioId) {
+            <tr class="hover:bg-amber-50 bg-white border-b border-stone-100">
+              <td class="font-medium text-stone-800 bg-transparent">
+                {{ usuario.nombreCompleto }}
+                @if (usuario.usuarioId === idUsuarioActual()) {
+                  <span class="badge badge-xs badge-outline text-amber-600 border-amber-600 ml-2">Tú</span>
+                }
+              </td>
+              <td class="text-stone-500 bg-transparent">{{ usuario.email }}</td>
+              <td class="bg-transparent">
+                <span class="badge {{ getRolBadgeClass(usuario.rol) }} badge-sm">{{ usuario.rol }}</span>
+              </td>
+              <td class="text-right bg-transparent">
+                @if (puedeEditar(usuario)) {
+                  <button 
+                    (click)="abrirModalCambiarRol(usuario)"
+                    class="btn btn-ghost btn-xs text-amber-600 hover:text-amber-700"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Cambiar Rol
+                  </button>
+                } @else {
+                  <span class="text-xs text-stone-400">No puedes cambiar el rol</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Info de permisos -->
+    <div class="mt-4 p-3 bg-stone-100 rounded-lg border border-stone-200">
+      <p class="text-xs text-stone-500">
+        @if (esAdmin()) {
+          <span class="text-amber-600 font-medium">Admin:</span> Puedes cambiar cualquier rol de usuario.
+        } @else {
+          <span class="text-yellow-600 font-medium">Gerente:</span> Solo puedes cambiar roles de Empleados a Gerente y viceversa.
+        }
+      </p>
+    </div>
+  }
+</div>
+
+<!-- Modal Cambiar Rol -->
+@if (modalAbierto()) {
+  <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm" (click)="cerrarModal()"></div>
+    <div class="bg-white border border-stone-200 rounded-2xl shadow-2xl w-full max-w-sm relative z-10" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-stone-200">
+        <h3 class="text-lg font-semibold text-stone-800">Cambiar Rol</h3>
+        <p class="text-sm text-stone-500 mt-1">{{ usuarioSeleccionado()?.nombreCompleto }}</p>
+      </div>
+      
+      <div class="p-6">
+        @if (errorCambiarRol()) {
+          <div role="alert" class="alert alert-error bg-red-50 border-red-200 mb-4">
+            <span class="text-red-600 text-sm">{{ errorCambiarRol() }}</span>
+          </div>
+        }
+        
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text text-stone-600 font-medium">Selecciona el nuevo rol</span>
+          </label>
+          <select 
+            [ngModel]="nuevoRolSeleccionado()" 
+            (ngModelChange)="nuevoRolSeleccionado.set($event)"
+            class="select select-bordered bg-stone-50 border-stone-300 text-stone-800 focus:border-amber-500 w-full"
+          >
+            @for (rol of rolesDisponibles(); track rol) {
+              <option [value]="rol">{{ rol }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      
+      <div class="p-6 border-t border-stone-200 flex gap-3">
+        <button 
+          (click)="cerrarModal()" 
+          class="btn flex-1 bg-stone-200 hover:bg-stone-300 text-stone-700 border-0"
+          [disabled]="guardandoRol()"
+        >
+          Cancelar
+        </button>
+        <button 
+          (click)="guardarCambioRol()" 
+          class="btn flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0"
+          [disabled]="guardandoRol()"
+        >
+          @if (guardandoRol()) {
+            <span class="loading loading-ring loading-sm"></span>
+          } @else {
+            Guardar
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

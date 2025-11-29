@@ -1,1 +1,37 @@
 /* You can add global styles to this file, and also import other style files */
+@import "tailwindcss";
+@plugin "daisyui" {
+   themes: light --default;
+ }
+
+/* Fix para iconos SVG en inputs */
+.input-icon svg {
+  stroke: #d97706 !important; /* amber-600 */
+  color: #d97706 !important;
+}
+
+.input-icon-toggle svg {
+  stroke: #d97706 !important; /* amber-600 */
+  color: #d97706 !important;
+}
+
+.input-icon-toggle:hover svg {
+  stroke: #b45309 !important; /* amber-700 */
+  color: #b45309 !important;
+}
+
+/* Animación para el drawer */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out forwards;
+}
