@@ -6,9 +6,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+              <lucide-icon [img]="Building2Icon" class="h-5 w-5 text-amber-600"></lucide-icon>
             </div>
             <div>
               <h3 class="text-lg font-semibold text-stone-800">Nueva Sede</h3>
@@ -16,9 +14,7 @@
             </div>
           </div>
           <button (click)="cerrar()" class="btn btn-ghost btn-sm btn-circle text-stone-400 hover:text-stone-800">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <lucide-icon [img]="XIcon" class="h-5 w-5"></lucide-icon>
           </button>
         </div>
       </div>
@@ -43,10 +39,15 @@
                 type="text" 
                 [ngModel]="nombre()" 
                 (ngModelChange)="nombre.set($event)"
+                (blur)="nombreTouched.set(true)"
                 placeholder="Ej: Sede Centro"
                 class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [ngClass]="{'input-error border-red-500': nombreInvalido()}"
                 [disabled]="creando()"
               />
+              @if (nombreInvalido()) {
+                <p class="text-red-500 text-xs mt-1">El nombre debe tener al menos 3 caracteres</p>
+              }
             </div>
             
             <div class="form-control">
@@ -57,10 +58,15 @@
                 type="text" 
                 [ngModel]="direccion()" 
                 (ngModelChange)="direccion.set($event)"
+                (blur)="direccionTouched.set(true)"
                 placeholder="Ej: Av. Principal 123"
                 class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [ngClass]="{'input-error border-red-500': direccionInvalida()}"
                 [disabled]="creando()"
               />
+              @if (direccionInvalida()) {
+                <p class="text-red-500 text-xs mt-1">La dirección debe tener al menos 5 caracteres</p>
+              }
             </div>
           </div>
           
@@ -74,12 +80,17 @@
                 type="number" 
                 [ngModel]="tarifaPorHora()" 
                 (ngModelChange)="tarifaPorHora.set($event)"
+                (blur)="tarifaTouched.set(true)"
                 min="0"
                 step="0.01"
                 placeholder="0.00"
                 class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [ngClass]="{'input-error border-red-500': tarifaInvalida()}"
                 [disabled]="creando()"
               />
+              @if (tarifaInvalida()) {
+                <p class="text-red-500 text-xs mt-1">La tarifa debe ser mayor a 0</p>
+              }
             </div>
             
             <div class="form-control">
@@ -90,12 +101,17 @@
                 type="number" 
                 [ngModel]="multaPorHora()" 
                 (ngModelChange)="multaPorHora.set($event)"
+                (blur)="multaTouched.set(true)"
                 min="0"
                 step="0.01"
                 placeholder="0.00"
                 class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [ngClass]="{'input-error border-red-500': multaInvalida()}"
                 [disabled]="creando()"
               />
+              @if (multaInvalida()) {
+                <p class="text-red-500 text-xs mt-1">La multa no puede ser negativa</p>
+              }
             </div>
           </div>
           
@@ -123,12 +139,17 @@
                   type="number" 
                   [ngModel]="montoMaximoMulta()" 
                   (ngModelChange)="montoMaximoMulta.set($event)"
+                  (blur)="montoMaximoTouched.set(true)"
                   min="0"
                   step="0.01"
                   placeholder="0.00"
                   class="input input-bordered bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                  [ngClass]="{'input-error border-red-500': montoMaximoInvalido()}"
                   [disabled]="creando()"
                 />
+                @if (montoMaximoInvalido()) {
+                  <p class="text-red-500 text-xs mt-1">El monto máximo debe ser mayor a 0</p>
+                }
               </div>
             }
           </div>
@@ -146,9 +167,7 @@
                 class="btn btn-sm bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 border-0"
                 [disabled]="creando()"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
+                <lucide-icon [img]="PlusIcon" class="h-4 w-4 mr-1"></lucide-icon>
                 Agregar nivel
               </button>
             </div>
@@ -198,9 +217,7 @@
                     [ngClass]="niveles().length <= 1 ? 'text-stone-300 cursor-not-allowed opacity-50' : 'text-red-500 hover:text-red-600 hover:bg-red-50'"
                     [disabled]="niveles().length <= 1 || creando()"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <lucide-icon [img]="Trash2Icon" class="h-4 w-4"></lucide-icon>
                   </button>
                 </div>
               }
@@ -220,16 +237,16 @@
             </label>
             <div class="relative">
               <span class="absolute inset-y-0 left-0 flex items-center pl-3 input-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
+                <lucide-icon [img]="KeyIcon" class="h-5 w-5 text-stone-400"></lucide-icon>
               </span>
               <input 
                 [type]="mostrarPassword() ? 'text' : 'password'" 
                 [ngModel]="passwordAcceso()" 
                 (ngModelChange)="passwordAcceso.set($event)"
+                (blur)="passwordTouched.set(true)"
                 placeholder="Mínimo 4 caracteres"
                 class="input input-bordered w-full pl-10 pr-10 bg-stone-50 border-stone-300 text-stone-800 placeholder-stone-400 focus:border-amber-500"
+                [ngClass]="{'input-error border-red-500': passwordInvalido()}"
                 [disabled]="creando()"
               />
               <button 
@@ -238,20 +255,19 @@
                 class="absolute inset-y-0 right-0 flex items-center pr-3 text-amber-600 hover:text-amber-700"
               >
                 @if (mostrarPassword()) {
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
+                  <lucide-icon [img]="EyeOffIcon" class="h-5 w-5"></lucide-icon>
                 } @else {
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
+                  <lucide-icon [img]="EyeIcon" class="h-5 w-5"></lucide-icon>
                 }
               </button>
             </div>
-            <label class="label">
-              <span class="label-text-alt text-stone-400">Esta contraseña se usará para acceder a la sede</span>
-            </label>
+            @if (passwordInvalido()) {
+              <p class="text-red-500 text-xs mt-1">La contraseña debe tener al menos 4 caracteres</p>
+            } @else {
+              <label class="label">
+                <span class="label-text-alt text-stone-400">Esta contraseña se usará para acceder a la sede</span>
+              </label>
+            }
           </div>
         </div>
       </div>
@@ -267,16 +283,14 @@
         </button>
         <button 
           (click)="crear()" 
-          class="btn flex-1 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0"
+          class="btn flex-1 bg-orange-600 hover:bg-orange-700 text-white border-0"
           [disabled]="creando()"
         >
           @if (creando()) {
             <span class="loading loading-spinner loading-sm"></span>
             Creando...
           } @else {
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
+            <lucide-icon [img]="PlusIcon" class="h-5 w-5 mr-1"></lucide-icon>
             Crear Sede
           }
         </button>

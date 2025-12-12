@@ -1,0 +1,42 @@
+<!-- Alert Container - Fixed position -->
+<div class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 max-w-sm">
+  @for (alert of alertService.alerts(); track alert.id) {
+    <div 
+      class="alert shadow-lg"
+      [class.alert-success]="alert.type === 'success'"
+      [class.alert-error]="alert.type === 'error'"
+      [class.alert-warning]="alert.type === 'warning'"
+      [class.alert-info]="alert.type === 'info'"
+      [class.animate-slide-in]="!alert.isLeaving"
+      [class.animate-slide-out]="alert.isLeaving"
+      role="alert"
+    >
+      <!-- Icon -->
+      @switch (alert.type) {
+        @case ('success') {
+          <lucide-icon [img]="CheckCircleIcon" class="w-5 h-5 shrink-0"></lucide-icon>
+        }
+        @case ('error') {
+          <lucide-icon [img]="XCircleIcon" class="w-5 h-5 shrink-0"></lucide-icon>
+        }
+        @case ('warning') {
+          <lucide-icon [img]="AlertTriangleIcon" class="w-5 h-5 shrink-0"></lucide-icon>
+        }
+        @case ('info') {
+          <lucide-icon [img]="InfoIcon" class="w-5 h-5 shrink-0"></lucide-icon>
+        }
+      }
+      
+      <span class="text-sm flex-1">{{ alert.message }}</span>
+      
+      <!-- Close button -->
+      <button 
+        type="button"
+        (click)="closeAlert(alert.id)"
+        class="btn btn-ghost btn-xs btn-circle hover:bg-black/10"
+      >
+        <lucide-icon [img]="XIcon" class="w-4 h-4"></lucide-icon>
+      </button>
+    </div>
+  }
+</div>

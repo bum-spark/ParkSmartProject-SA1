@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -17,11 +17,32 @@ export class PerfilTabComponent {
   nombre = input<string>('');
   email = input<string>('');
   guardando = input<boolean>(false);
-  error = input<string | null>(null);
   exito = input<boolean>(false);
 
   nombreLocal = signal<string>('');
   emailLocal = signal<string>('');
+
+  // Estados touched para validaciones
+  nombreTouched = signal<boolean>(false);
+  emailTouched = signal<boolean>(false);
+
+  // Computed para validaciones
+  nombreInvalido = computed(() => this.nombreTouched() && this.nombreLocal().trim().length < 3);
+  emailInvalido = computed(() => {
+    if (!this.emailTouched()) return false;
+    const email = this.emailLocal().trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return !emailRegex.test(email);
+  });
+
+  // Computed para verificar si el formulario es válido
+  formularioValido = computed(() => {
+    const nombreValido = this.nombreLocal().trim().length >= 3;
+    const email = this.emailLocal().trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailValido = emailRegex.test(email);
+    return nombreValido && emailValido;
+  });
 
   onGuardar = output<PerfilData>();
 
@@ -41,6 +62,15 @@ export class PerfilTabComponent {
   }
 
   guardar(): void {
+    // Marcar todos los campos como touched para mostrar validaciones
+    this.nombreTouched.set(true);
+    this.emailTouched.set(true);
+
+    // Si el formulario no es válido, no continuar
+    if (!this.formularioValido()) {
+      return;
+    }
+
     this.onGuardar.emit({
       nombre: this.nombreLocal(),
       email: this.emailLocal()

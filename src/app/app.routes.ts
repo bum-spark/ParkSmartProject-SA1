@@ -1,25 +1,33 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './Shared/Guards/auth-guard';
+import { authGuard, noAuthGuard, rootRedirectGuard } from './Shared/Guards/auth-guard';
+import { SignIn } from './Pages/Public/Auth/SignIn/SignIn';
+import { SignUp } from './Pages/Public/Auth/SignUp/SignUp';
+import { HomePage } from './Pages/Private/HomePage/HomePage';
+import { DashboardSede } from './Pages/Private/DashboardSede/DashboardSede';
+import { DashboardOverview } from './Pages/Private/DashboardSede/Pages/DashboardOverview/DashboardOverview';
+import { DashboardMapa } from './Pages/Private/DashboardSede/Pages/DashboardMapa/DashboardMapa';
+import { DashboardReservas } from './Pages/Private/DashboardSede/Pages/DashboardReservas/DashboardReservas';
+import { DashboardHistorial } from './Pages/Private/DashboardSede/Pages/DashboardHistorial/DashboardHistorial';
 
 export const routes: Routes = [
-  // Ruta por defecto - redirige al login
   {
     path: '',
-    redirectTo: 'auth/signin',
-    pathMatch: 'full'
+    pathMatch: 'full',
+    canActivate: [rootRedirectGuard],
+    component: SignIn
   },
-  
-  // Rutas públicas (Autenticación)
   {
     path: 'auth',
     children: [
       {
         path: 'signin',
-        loadComponent: () => import('./Pages/Public/Auth/SignIn/SignIn').then(m => m.SignIn)
+        component: SignIn,
+        canActivate: [noAuthGuard]
       },
       {
         path: 'signup',
-        loadComponent: () => import('./Pages/Public/Auth/SignUp/SignUp').then(m => m.SignUp)
+        component: SignUp,
+        canActivate: [noAuthGuard]
       },
       {
         path: '',
@@ -29,21 +37,43 @@ export const routes: Routes = [
     ]
   },
   
-  // Rutas privadas (requieren autenticación)
   {
     path: 'home',
-    loadComponent: () => import('./Pages/Private/HomePage/HomePage').then(m => m.HomePage),
+    component: HomePage,
     canActivate: [authGuard]
   },
   {
     path: 'dashboard/:sedeId',
-    loadComponent: () => import('./Pages/Private/DashboardSede/DashboardSede').then(m => m.DashboardSede),
-    canActivate: [authGuard]
+    component: DashboardSede,
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      },
+      {
+        path: 'dashboard',
+        component: DashboardOverview
+      },
+      {
+        path: 'mapa',
+        component: DashboardMapa
+      },
+      {
+        path: 'reservas',
+        component: DashboardReservas
+      },
+      {
+        path: 'historial',
+        component: DashboardHistorial
+      }
+    ]
   },
   
-  // Ruta 404 - redirige al login
   {
     path: '**',
-    redirectTo: 'auth/signin'
+    canActivate: [rootRedirectGuard],
+    component: SignIn
   }
 ];

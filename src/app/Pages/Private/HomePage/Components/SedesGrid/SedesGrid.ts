@@ -1,5 +1,6 @@
 import { Component, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { LucideAngularModule, Building, Plus } from 'lucide-angular';
 import { SedeCardComponent, AccesoSedeInfo } from '../SedeCard/SedeCard';
 import { Sede } from '../../../../../Shared/Interfaces/sede.interface';
 
@@ -7,9 +8,13 @@ import { Sede } from '../../../../../Shared/Interfaces/sede.interface';
   selector: 'app-sedes-grid',
   standalone: true,
   templateUrl: './SedesGrid.html',
-  imports: [CommonModule, SedeCardComponent]
+  imports: [CommonModule, SedeCardComponent, LucideAngularModule]
 })
 export class SedesGridComponent {
+  // Iconos
+  readonly BuildingIcon = Building;
+  readonly PlusIcon = Plus;
+
   sedes = input.required<Sede[]>();
   esAdmin = input<boolean>(false);
   accesosValidos = input<Map<string, { fechaExpiracion: Date; tiempoRestante: string }>>(new Map());

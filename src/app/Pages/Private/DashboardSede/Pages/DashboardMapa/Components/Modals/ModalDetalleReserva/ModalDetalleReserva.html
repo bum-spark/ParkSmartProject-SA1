@@ -1,0 +1,126 @@
+@if (modal().abierto) {
+  <div class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="cerrar()">
+    <div class="bg-white border border-stone-200 rounded-2xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-stone-200">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+            <lucide-icon [img]="ClipboardListIcon" class="h-5 w-5 text-amber-400"></lucide-icon>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-stone-800">Pago de Reserva</h3>
+            <p class="text-sm text-stone-500">Cajón {{ modal().reserva?.numeroCajon }} - Piso {{ modal().reserva?.numeroPiso }}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        @if (modal().error) {
+          <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
+            <p class="text-red-400 text-sm">{{ modal().error }}</p>
+          </div>
+        }
+        
+        @if (modal().calculando) {
+          <div class="flex flex-col items-center py-8">
+            <span class="loading loading-spinner loading-lg text-amber-500"></span>
+            <p class="text-stone-500 mt-4">Calculando costo...</p>
+          </div>
+        }
+        
+        @if (modal().costoCalculado && !modal().calculando) {
+          <!-- Información de la reserva -->
+          <div class="bg-stone-100 rounded-xl p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-stone-500">Placa:</span>
+              <span class="text-stone-800 font-mono font-semibold">{{ modal().reserva?.placaVehiculo }}</span>
+            </div>
+            @if (modal().costoCalculado!.fechaReserva) {
+              <div class="flex justify-between items-center">
+                <span class="text-stone-500">Fecha reserva:</span>
+                <span class="text-stone-800">{{ formatearFecha(modal().costoCalculado!.fechaReserva!) }}</span>
+              </div>
+            }
+            @if (modal().costoCalculado!.fechaVencimiento) {
+              <div class="flex justify-between items-center">
+                <span class="text-stone-500">Vencimiento:</span>
+                <span class="text-stone-800">{{ formatearFecha(modal().costoCalculado!.fechaVencimiento!) }}</span>
+              </div>
+            }
+            @if (modal().costoCalculado!.duracionReservadaHoras) {
+              <div class="flex justify-between items-center">
+                <span class="text-stone-500">Duración reservada:</span>
+                <span class="text-stone-800">{{ modal().costoCalculado!.duracionReservadaHoras }} horas</span>
+              </div>
+            }
+          </div>
+
+          <!-- Indicador de tiempo -->
+          @if (modal().reserva?.fechaVencimiento) {
+            @if (getTiempoRestanteReserva(modal().reserva) > 0) {
+              <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                <div class="flex items-center gap-2">
+                  <lucide-icon [img]="ClockIcon" class="h-4 w-4 text-green-400"></lucide-icon>
+                  <span class="text-green-400 text-sm font-medium">{{ formatearTiempoRestante(getTiempoRestanteReserva(modal().reserva)) }}</span>
+                </div>
+              </div>
+            } @else {
+              <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                <div class="flex items-center gap-2">
+                  <lucide-icon [img]="AlertTriangleIcon" class="h-4 w-4 text-red-400"></lucide-icon>
+                  <span class="text-red-400 text-sm font-medium">Reserva vencida - Multa aplicable</span>
+                </div>
+              </div>
+            }
+          }
+          
+          <!-- Desglose de costos -->
+          <div class="bg-stone-100 rounded-xl p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-stone-500">Tarifa reserva:</span>
+              <span class="text-stone-800">${{ modal().costoCalculado!.montoTarifa | number:'1.2-2' }}</span>
+            </div>
+            
+            @if (modal().costoCalculado!.tieneMulta) {
+              <div class="border-t border-stone-200 pt-3">
+                <div class="flex justify-between items-center text-amber-500">
+                  <span>Horas excedidas:</span>
+                  <span>{{ modal().costoCalculado!.horasExcedidas }} horas</span>
+                </div>
+                <div class="flex justify-between items-center text-red-400 mt-2">
+                  <span>Multa:</span>
+                  <span>+${{ modal().costoCalculado!.montoMulta | number:'1.2-2' }}</span>
+                </div>
+              </div>
+            } @else {
+              <div class="flex items-center gap-2 text-green-400 text-sm">
+                <lucide-icon [img]="CheckIcon" class="h-4 w-4"></lucide-icon>
+                Sin multas - Reserva dentro del tiempo
+              </div>
+            }
+            
+            <div class="border-t border-stone-200 pt-3 flex justify-between items-center">
+              <span class="text-lg text-stone-800 font-semibold">Total a pagar:</span>
+              <span class="text-2xl text-green-500 font-bold">${{ modal().costoCalculado!.montoTotal | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+      
+      <div class="p-6 border-t border-stone-200 flex gap-3">
+        <button (click)="cerrar()" class="btn flex-1 bg-stone-200 hover:bg-stone-300 text-stone-800 border-0" [disabled]="modal().cargando">
+          Cerrar
+        </button>
+        <button 
+          (click)="pagar()" 
+          class="btn flex-1 bg-green-600 hover:bg-green-500 text-stone-800 border-0" 
+          [disabled]="modal().cargando || modal().calculando || !modal().costoCalculado"
+        >
+          @if (modal().cargando) {
+            <span class="loading loading-spinner loading-sm"></span>
+          }
+          Pagar y Liberar
+        </button>
+      </div>
+    </div>
+  </div>
+}

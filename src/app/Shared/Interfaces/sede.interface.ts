@@ -21,8 +21,8 @@ export interface Sede {
   totalNiveles: number;
   totalCajones: number;
   cajonesLibres: number;
-  cajonesOcupados: number;
-  cajonesReservados: number;
+  ticketsActivos: number;
+  reservasActivas: number;
 }
 
 export interface CrearSedeBody {
@@ -79,8 +79,12 @@ export interface EstadisticaSede {
   totalCajones: number;
   cajonesOcupados: number;
   cajonesLibres: number;
+  cajonesConTicketActivo: number;
+  cajonesConReservaPendiente: number;
   porcentajeOcupacion: number;
   ingresosDia: number;
+  ingresosTickets: number;
+  ingresosReservas: number;
   tarifaPorHora: number;
 }
 

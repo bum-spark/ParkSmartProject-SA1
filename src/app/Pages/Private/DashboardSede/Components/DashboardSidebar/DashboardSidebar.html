@@ -1,0 +1,73 @@
+<!-- Sidebar Desktop -->
+<aside class="hidden lg:flex w-64 h-full bg-white/80 backdrop-blur-xl border-r border-stone-200 flex-col">
+  <!-- Logo -->
+  <div class="p-4 border-b border-stone-200">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
+        <lucide-icon [img]="CarIcon" class="h-6 w-6 text-white"></lucide-icon>
+      </div>
+      <div>
+        <span class="text-lg font-bold text-stone-800">ParkSmart</span>
+        <p class="text-xs text-stone-500 truncate max-w-32">{{ nombreSede() }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegacion -->
+  <nav class="flex-1 p-4 space-y-2">
+    <a 
+      [routerLink]="['/dashboard', sedeId(), 'dashboard']" 
+      routerLinkActive="bg-amber-500/20 text-amber-600" 
+      class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-stone-500 hover:bg-stone-200" 
+      [routerLinkActiveOptions]="{exact: true}"
+    >
+      <lucide-icon [img]="LayoutDashboardIcon" class="h-5 w-5"></lucide-icon>
+      Dashboard
+    </a>
+    <a 
+      [routerLink]="['/dashboard', sedeId(), 'mapa']" 
+      routerLinkActive="bg-amber-500/20 text-amber-600" 
+      class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-stone-500 hover:bg-stone-200"
+    >
+      <lucide-icon [img]="MapIcon" class="h-5 w-5"></lucide-icon>
+      Mapa de Cajones
+    </a>
+    <a 
+      [routerLink]="['/dashboard', sedeId(), 'reservas']" 
+      routerLinkActive="bg-amber-500/20 text-amber-600" 
+      class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-stone-500 hover:bg-stone-200"
+    >
+      <lucide-icon [img]="CalendarClockIcon" class="h-5 w-5"></lucide-icon>
+      Reservas
+      @if (cantidadReservasActivas() > 0) {
+        <span class="ml-auto badge badge-sm badge-warning">{{ cantidadReservasActivas() }}</span>
+      }
+    </a>
+    <a 
+      [routerLink]="['/dashboard', sedeId(), 'historial']" 
+      routerLinkActive="bg-amber-500/20 text-amber-600" 
+      class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-stone-500 hover:bg-stone-200"
+    >
+      <lucide-icon [img]="HistoryIcon" class="h-5 w-5"></lucide-icon>
+      Historial
+    </a>
+  </nav>
+
+  <!-- Footer sidebar -->
+  <div class="p-4 border-t border-stone-200 space-y-2">
+    <button 
+      (click)="volverInicio()" 
+      class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-stone-500 hover:bg-stone-200 transition-all cursor-pointer"
+    >
+      <lucide-icon [img]="ArrowLeftIcon" class="h-5 w-5"></lucide-icon>
+      Cambiar Sede
+    </button>
+    <button 
+      (click)="cerrarSesion()" 
+      class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+    >
+      <lucide-icon [img]="LogOutIcon" class="h-5 w-5"></lucide-icon>
+      Cerrar Sesion
+    </button>
+  </div>
+</aside>

@@ -1,0 +1,42 @@
+<div class="space-y-4">
+  @if (historial().length === 0) {
+    <div class="text-center py-12">
+      <lucide-icon [img]="HistoryIcon" class="h-16 w-16 text-stone-400 mx-auto mb-4"></lucide-icon>
+      <h3 class="text-xl font-semibold text-stone-800 mb-2">Sin Historial</h3>
+      <p class="text-stone-500">No hay transacciones registradas todavía.</p>
+    </div>
+  } @else {
+    <div class="overflow-x-auto">
+      <table class="table w-full">
+        <thead>
+          <tr class="text-stone-500 border-stone-200">
+            <th>Tipo</th>
+            <th>Placa</th>
+            <th>Cajón</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Monto</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (transaccion of historial(); track transaccion.transaccionId) {
+            <tr class="border-stone-200 hover:bg-white/80">
+              <td>
+                <span class="badge {{ transaccion.tipo === 'ticket' ? 'badge-info' : 'badge-warning' }} badge-sm">
+                  {{ transaccion.tipo === 'ticket' ? 'Ticket' : 'Reserva' }}
+                </span>
+              </td>
+              <td class="font-mono font-bold text-stone-800">{{ transaccion.placaVehiculo }}</td>
+              <td>{{ transaccion.numeroCajon }}</td>
+              <td class="text-stone-500">{{ formatearFecha(transaccion.fechaInicio) }}</td>
+              <td class="text-stone-500">{{ transaccion.fechaFin ? formatearFecha(transaccion.fechaFin) : '-' }}</td>
+              <td class="text-green-400 font-medium">{{ transaccion.montoTotal !== null ? ('$' + (transaccion.montoTotal | number:'1.2-2')) : '-' }}</td>
+              <td><span class="badge {{ getEstadoTransaccionColor(transaccion.estado) }} badge-sm">{{ transaccion.estado }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

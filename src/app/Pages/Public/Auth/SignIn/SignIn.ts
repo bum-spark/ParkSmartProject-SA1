@@ -3,23 +3,30 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../Shared/Services/auth.service';
+import { AlertService } from '../../../../Shared/Services/Alert.service';
 import { LoginBody } from '../../../../Shared/Interfaces';
+import { LucideAngularModule, Car, Mail, KeyRound } from 'lucide-angular';
 
 @Component({
   selector: 'app-sign-in',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
   templateUrl: './SignIn.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SignIn {
   private readonly _authService = inject(AuthService);
   private readonly _router = inject(Router);
+  private readonly _alertService = inject(AlertService);
+
+  // Lucide icons
+  readonly CarIcon = Car;
+  readonly MailIcon = Mail;
+  readonly KeyRoundIcon = KeyRound;
 
   email = signal('');
   password = signal('');
   cargando = signal(false);
-  error = signal<string | null>(null);
   mostrarPassword = signal(false);
 
   toggleMostrarPassword(): void {
@@ -28,12 +35,11 @@ export class SignIn {
 
   async onSubmit(): Promise<void> {
     if (!this.email() || !this.password()) {
-      this.error.set('Por favor, completa todos los campos');
+      this._alertService.warning('Por favor, completa todos los campos');
       return;
     }
 
     this.cargando.set(true);
-    this.error.set(null);
 
     const credenciales: LoginBody = {
       email: this.email(),
@@ -44,14 +50,15 @@ export class SignIn {
       next: (response) => {
         this.cargando.set(false);
         if (!response.error) {
+          this._alertService.success('¡Bienvenido de nuevo!');
           this._router.navigate(['/home']);
         } else {
-          this.error.set(response.msg || 'Error al iniciar sesión');
+          this._alertService.error(response.msg || 'Error al iniciar sesión');
         }
       },
       error: (err) => {
         this.cargando.set(false);
-        this.error.set(err.error?.msg || 'Error de conexión. Intenta de nuevo.');
+        this._alertService.error(err.error?.msg || 'Error de conexión. Intenta de nuevo.');
       }
     });
   }

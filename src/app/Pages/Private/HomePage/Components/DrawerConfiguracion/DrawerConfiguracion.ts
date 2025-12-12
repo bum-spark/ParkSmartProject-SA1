@@ -5,6 +5,7 @@ import { UsuarioLista, RolUsuario } from '../../../../../Shared/Interfaces';
 import { PerfilTabComponent } from './Tabs/PerfilTab/PerfilTab';
 import { PasswordTabComponent, PasswordData } from './Tabs/PasswordTab/PasswordTab';
 import { UsuariosTabComponent, CambiarRolData } from './Tabs/UsuariosTab/UsuariosTab';
+import { LucideAngularModule, User, Lock, Users, X } from 'lucide-angular';
 
 export type TabConfiguracion = 'perfil' | 'password' | 'usuarios';
 
@@ -23,11 +24,18 @@ export type CambiarRolEvent = CambiarRolData;
     FormsModule,
     PerfilTabComponent,
     PasswordTabComponent,
-    UsuariosTabComponent
+    UsuariosTabComponent,
+    LucideAngularModule
   ],
   templateUrl: './DrawerConfiguracion.html'
 })
 export class DrawerConfiguracionComponent {
+  // Lucide icons
+  readonly UserIcon = User;
+  readonly LockIcon = Lock;
+  readonly UsersIcon = Users;
+  readonly XIcon = X;
+
   isOpen = input.required<boolean>();
   nombreUsuario = input.required<string>();
   emailUsuario = input.required<string>();
@@ -35,16 +43,13 @@ export class DrawerConfiguracionComponent {
   idUsuario = input<string | null>(null);
   
   guardandoPerfil = input<boolean>(false);
-  errorPerfil = input<string>('');
   exitoPerfil = input<boolean>(false);
   
   guardandoPassword = input<boolean>(false);
-  errorPassword = input<string>('');
   exitoPassword = input<boolean>(false);
   
   usuarios = input<UsuarioLista[]>([]);
   cargandoUsuarios = input<boolean>(false);
-  errorUsuarios = input<string>('');
   
   onCerrar = output<void>();
   onGuardarPerfil = output<PerfilGuardarEvent>();

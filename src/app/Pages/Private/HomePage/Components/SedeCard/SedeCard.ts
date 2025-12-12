@@ -1,5 +1,6 @@
 import { Component, input, output, computed } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { LucideAngularModule, MapPin, Settings, ShieldCheck, Check, Lock } from 'lucide-angular';
 import { Sede } from '../../../../../Shared/Interfaces';
 import { EstadoSede } from '../../../../../Shared/Interfaces/enums';
 
@@ -12,10 +13,17 @@ export interface AccesoSedeInfo {
 @Component({
   selector: 'app-sede-card',
   standalone: true,
-  imports: [CommonModule, DecimalPipe],
+  imports: [CommonModule, DecimalPipe, LucideAngularModule],
   templateUrl: './SedeCard.html',
 })
 export class SedeCardComponent {
+  // Iconos
+  readonly MapPinIcon = MapPin;
+  readonly SettingsIcon = Settings;
+  readonly ShieldCheckIcon = ShieldCheck;
+  readonly CheckIcon = Check;
+  readonly LockIcon = Lock;
+
   sede = input.required<Sede>();
   esAdmin = input<boolean>(false);
   accesoInfo = input<AccesoSedeInfo>({ tieneAcceso: false, fechaExpiracion: '', tiempoRestante: '' });
@@ -26,8 +34,9 @@ export class SedeCardComponent {
   ocupacionPorcentaje = computed(() => {
     const s = this.sede();
     if (s.totalCajones === 0) return 0;
-    const noDisponibles = s.cajonesOcupados + (s.cajonesReservados || 0);
-    return Math.round((noDisponibles / s.totalCajones) * 100);
+    // Cajones ocupados = tickets activos + reservas activas
+    const ocupados = s.ticketsActivos + s.reservasActivas;
+    return Math.round((ocupados / s.totalCajones) * 100);
   });
 
   getEstadoColor(estado: EstadoSede): string {

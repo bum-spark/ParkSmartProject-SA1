@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Sede } from '../../../../../Shared/Interfaces';
 import { EstadoSede } from '../../../../../Shared/Interfaces/enums';
+import { LucideAngularModule, Pencil, X, CheckCircle, Key, Lock, Plus, Trash2, Check, Eye, EyeOff } from 'lucide-angular';
 
 export interface NivelFormEditar {
   numeroPiso: number;
@@ -29,10 +30,22 @@ export interface CambiarEstadoData {
 @Component({
   selector: 'app-modal-editar-sede',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './ModalEditarSede.html'
 })
 export class ModalEditarSedeComponent {
+  // Lucide icons
+  readonly PencilIcon = Pencil;
+  readonly XIcon = X;
+  readonly CheckCircleIcon = CheckCircle;
+  readonly KeyIcon = Key;
+  readonly LockIcon = Lock;
+  readonly PlusIcon = Plus;
+  readonly Trash2Icon = Trash2;
+  readonly CheckIcon = Check;
+  readonly EyeIcon = Eye;
+  readonly EyeOffIcon = EyeOff;
+
   // Inputs
   isOpen = input.required<boolean>();
   sede = input<Sede | null>(null);
@@ -59,6 +72,36 @@ export class ModalEditarSedeComponent {
   contrasenaCreador = signal<string>('');
   mostrarPasswordAcceso = signal<boolean>(false);
   mostrarPasswordCreador = signal<boolean>(false);
+
+  // Estados touched para validaciones
+  nombreTouched = signal<boolean>(false);
+  direccionTouched = signal<boolean>(false);
+  tarifaTouched = signal<boolean>(false);
+  multaTouched = signal<boolean>(false);
+  montoMaximoTouched = signal<boolean>(false);
+  passwordAccesoTouched = signal<boolean>(false);
+  contrasenaCreadorTouched = signal<boolean>(false);
+
+  // Computed para validaciones
+  nombreInvalido = computed(() => this.nombreTouched() && this.nombre().trim().length < 3);
+  direccionInvalida = computed(() => this.direccionTouched() && this.direccion().trim().length < 5);
+  tarifaInvalida = computed(() => this.tarifaTouched() && this.tarifaPorHora() <= 0);
+  multaInvalida = computed(() => this.multaTouched() && this.multaPorHora() < 0);
+  montoMaximoInvalido = computed(() => this.multaConTope() && this.montoMaximoTouched() && this.montoMaximoMulta() <= 0);
+  passwordAccesoInvalido = computed(() => this.passwordAccesoTouched() && this.passwordAcceso().length > 0 && this.passwordAcceso().length < 4);
+  contrasenaCreadorInvalida = computed(() => this.contrasenaCreadorTouched() && this.contrasenaCreador().trim().length === 0);
+
+  // Computed para verificar si el formulario es válido
+  formularioValido = computed(() => {
+    const nombreValido = this.nombre().trim().length >= 3;
+    const direccionValida = this.direccion().trim().length >= 5;
+    const tarifaValida = this.tarifaPorHora() > 0;
+    const multaValida = this.multaPorHora() >= 0;
+    const montoMaximoValido = !this.multaConTope() || this.montoMaximoMulta() > 0;
+    const passwordAccesoValido = this.passwordAcceso().length === 0 || this.passwordAcceso().length >= 4;
+    const contrasenaCreadorValida = this.contrasenaCreador().trim().length > 0;
+    return nombreValido && direccionValida && tarifaValida && multaValida && montoMaximoValido && passwordAccesoValido && contrasenaCreadorValida;
+  });
 
   // Datos originales para comparar cambios
   private datosOriginales = signal<{
@@ -200,9 +243,35 @@ export class ModalEditarSedeComponent {
     this.mostrarPasswordAcceso.set(false);
     this.mostrarPasswordCreador.set(false);
     this.datosOriginales.set(null);
+    // Limpiar touched
+    this.nombreTouched.set(false);
+    this.direccionTouched.set(false);
+    this.tarifaTouched.set(false);
+    this.multaTouched.set(false);
+    this.montoMaximoTouched.set(false);
+    this.passwordAccesoTouched.set(false);
+    this.contrasenaCreadorTouched.set(false);
   }
 
   guardar(): void {
+    // Marcar todos los campos como touched para mostrar validaciones
+    this.nombreTouched.set(true);
+    this.direccionTouched.set(true);
+    this.tarifaTouched.set(true);
+    this.multaTouched.set(true);
+    this.contrasenaCreadorTouched.set(true);
+    if (this.multaConTope()) {
+      this.montoMaximoTouched.set(true);
+    }
+    if (this.passwordAcceso().length > 0) {
+      this.passwordAccesoTouched.set(true);
+    }
+
+    // Si el formulario no es válido, no continuar
+    if (!this.formularioValido()) {
+      return;
+    }
+
     const data: EditarSedeData = {
       nombre: this.nombre().trim(),
       direccion: this.direccion().trim(),

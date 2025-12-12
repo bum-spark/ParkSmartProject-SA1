@@ -4,26 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SedeService } from '../../../Shared/Services/sede.service';
 import { AuthService } from '../../../Shared/Services/auth.service';
+import { AlertService } from '../../../Shared/Services/Alert.service';
 import { LocalStorage } from '../../../Shared/Services/localStorage.service';
 import { Sede, VerificarAccesoSedeBody, UsuarioLista, CrearSedeBody, ActualizarDatosSedeBody, CambiarEstadoSedeBody, AccesoSedeCache } from '../../../Shared/Interfaces';
 import { EstadoSede, RolUsuario } from '../../../Shared/Interfaces/enums';
-// Import child components
-import { 
-  NavbarComponent, 
-  SedesGridComponent, 
-  ModalAccesoSedeComponent,
-  DrawerConfiguracionComponent,
-  PerfilGuardarEvent,
-  CambiarRolEvent,
-  ModalCrearSedeComponent,
-  ModalEditarSedeComponent,
-  ModalAccesoEdicionComponent,
-  CrearSedeData,
-  EditarSedeData,
-  CambiarEstadoData,
-  VerificarAccesoData
-} from './Components';
+
 import { PasswordData } from './Components/DrawerConfiguracion/Tabs/PasswordTab/PasswordTab';
+import { NavbarComponent } from './Components/Navbar/Navbar';
+import { SedesGridComponent } from './Components/SedesGrid/SedesGrid';
+import { ModalAccesoSedeComponent } from './Components/ModalAccesoSede/ModalAccesoSede';
+import { CambiarRolEvent, DrawerConfiguracionComponent, PerfilGuardarEvent } from './Components/DrawerConfiguracion/DrawerConfiguracion';
+import { CrearSedeData, ModalCrearSedeComponent } from './Components/ModalCrearSede/ModalCrearSede';
+import { CambiarEstadoData, EditarSedeData, ModalEditarSedeComponent } from './Components/ModalEditarSede/ModalEditarSede';
+import { ModalAccesoEdicionComponent, VerificarAccesoData } from './Components/ModalAccesoEdicion/ModalAccesoEdicion';
 
 @Component({
   selector: 'app-home-page',
@@ -47,11 +40,11 @@ export class HomePage implements OnInit {
   private readonly _authService = inject(AuthService);
   private readonly _localStorage = inject(LocalStorage);
   private readonly _router = inject(Router);
+  private readonly _alertService = inject(AlertService);
 
   // Estado general
   sedes = signal<Sede[]>([]);
   cargando = signal(true);
-  error = signal<string | null>(null);
   
   // Usuario
   nombreUsuario = this._localStorage.nombreUsuario;
@@ -64,19 +57,16 @@ export class HomePage implements OnInit {
   verificandoAcceso = signal(false);
   errorAcceso = signal<string | null>(null);
 
-  // Drawer de configuración
+  // Drawer de configuracion
   drawerAbierto = signal(false);
   perfilNombre = signal('');
   perfilEmail = signal('');
   guardandoPerfil = signal(false);
-  errorPerfil = signal<string | null>(null);
   exitoPerfil = signal(false);
   guardandoPassword = signal(false);
-  errorPassword = signal<string | null>(null);
   exitoPassword = signal(false);
   usuarios = signal<UsuarioLista[]>([]);
   cargandoUsuarios = signal(false);
-  errorUsuarios = signal<string | null>(null);
 
   // Modal crear sede
   modalCrearSedeAbierto = signal(false);
@@ -92,13 +82,13 @@ export class HomePage implements OnInit {
   cambiandoEstado = signal(false);
   errorCambiarEstado = signal<string | null>(null);
   
-  // Modal de verificación de acceso para edición
+  // Modal de verificacion de acceso para edición
   modalAccesoEdicionAbierto = signal(false);
   sedePendienteEdicion = signal<Sede | null>(null);
   verificandoAccesoEdicion = signal(false);
   errorAccesoEdicion = signal<string | null>(null);
 
-  // Computed para permisos
+  // Verificar permisos
   esAdminOGerente = computed(() => {
     const rol = this.rolUsuario();
     return rol === RolUsuario.Admin || rol === RolUsuario.Gerente;
@@ -106,7 +96,7 @@ export class HomePage implements OnInit {
 
   esAdmin = computed(() => this.rolUsuario() === RolUsuario.Admin);
 
-  // Computed para obtener mapa de accesos validos para SedesGridComponent
+  // Obetener mapa de cajones
   accesosValidosMap = computed(() => {
     const map = new Map<string, { fechaExpiracion: Date; tiempoRestante: string }>();
     for (const sede of this.sedes()) {
@@ -145,7 +135,6 @@ export class HomePage implements OnInit {
 
   cargarSedes(): void {
     this.cargando.set(true);
-    this.error.set(null);
     
     this._sedeService.obtenerTodasLasSedes().subscribe({
       next: (response) => {
@@ -153,17 +142,17 @@ export class HomePage implements OnInit {
         if (!response.error && response.data) {
           this.sedes.set(response.data);
         } else {
-          this.error.set(response.msg || 'Error al cargar las sedes');
+          this._alertService.error(response.msg || 'Error al cargar las sedes');
         }
       },
       error: (err) => {
         this.cargando.set(false);
-        this.error.set(err.error?.msg || 'Error de conexión');
+        this._alertService.error(err.error?.msg || 'Error de conexión');
       }
     });
   }
 
-  // DRAWER DE CONFIGURACION
+  // DRAWER CONFIGURACION
   abrirDrawer(): void {
     this.drawerAbierto.set(true);
     this.cargarDatosUsuario();
@@ -176,26 +165,23 @@ export class HomePage implements OnInit {
   }
 
   limpiarFormularios(): void {
-    this.errorPerfil.set(null);
     this.exitoPerfil.set(false);
-    this.errorPassword.set(null);
     this.exitoPassword.set(false);
   }
 
   handleGuardarPerfil(event: PerfilGuardarEvent): void {
     if (!event.nombre || !event.email) {
-      this.errorPerfil.set('Todos los campos son obligatorios');
+      this._alertService.warning('Todos los campos son obligatorios');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(event.email)) {
-      this.errorPerfil.set('El correo electrónico no es válido');
+      this._alertService.warning('El correo electrónico no es válido');
       return;
     }
 
     this.guardandoPerfil.set(true);
-    this.errorPerfil.set(null);
     this.exitoPerfil.set(false);
 
     const id = this.idUsuario();
@@ -211,36 +197,36 @@ export class HomePage implements OnInit {
           this.perfilNombre.set(event.nombre);
           this.perfilEmail.set(event.email);
           this.exitoPerfil.set(true);
+          this._alertService.success('Perfil actualizado correctamente');
           setTimeout(() => this.exitoPerfil.set(false), 3000);
         } else {
-          this.errorPerfil.set(response.msg || 'Error al actualizar perfil');
+          this._alertService.error(response.msg || 'Error al actualizar perfil');
         }
       },
       error: (err) => {
         this.guardandoPerfil.set(false);
-        this.errorPerfil.set(err.error?.msg || 'Error de conexión');
+        this._alertService.error(err.error?.msg || 'Error de conexión');
       }
     });
   }
 
   handleGuardarPassword(event: PasswordData): void {
     if (!event.passwordActual || !event.passwordNueva || !event.passwordConfirmar) {
-      this.errorPassword.set('Todos los campos son obligatorios');
+      this._alertService.warning('Todos los campos son obligatorios');
       return;
     }
 
     if (event.passwordNueva.length < 6) {
-      this.errorPassword.set('La nueva contraseña debe tener al menos 6 caracteres');
+      this._alertService.warning('La nueva contraseña debe tener al menos 6 caracteres');
       return;
     }
 
     if (event.passwordNueva !== event.passwordConfirmar) {
-      this.errorPassword.set('Las contraseñas no coinciden');
+      this._alertService.warning('Las contraseñas no coinciden');
       return;
     }
 
     this.guardandoPassword.set(true);
-    this.errorPassword.set(null);
     this.exitoPassword.set(false);
 
     this._authService.cambiarPassword({
@@ -251,14 +237,15 @@ export class HomePage implements OnInit {
         this.guardandoPassword.set(false);
         if (!response.error) {
           this.exitoPassword.set(true);
+          this._alertService.success('Contraseña cambiada correctamente');
           setTimeout(() => this.exitoPassword.set(false), 3000);
         } else {
-          this.errorPassword.set(response.msg || 'Error al cambiar contraseña');
+          this._alertService.error(response.msg || 'Error al cambiar contraseña');
         }
       },
       error: (err) => {
         this.guardandoPassword.set(false);
-        this.errorPassword.set(err.error?.msg || 'Error de conexión');
+        this._alertService.error(err.error?.msg || 'Error de conexión');
       }
     });
   }
@@ -282,7 +269,6 @@ export class HomePage implements OnInit {
 
   cargarUsuarios(): void {
     this.cargandoUsuarios.set(true);
-    this.errorUsuarios.set(null);
 
     this._authService.obtenerUsuarios().subscribe({
       next: (response) => {
@@ -290,12 +276,12 @@ export class HomePage implements OnInit {
         if (!response.error && response.data) {
           this.usuarios.set(response.data);
         } else {
-          this.errorUsuarios.set(response.msg || 'Error al cargar usuarios');
+          this._alertService.error(response.msg || 'Error al cargar usuarios');
         }
       },
       error: (err) => {
         this.cargandoUsuarios.set(false);
-        this.errorUsuarios.set(err.error?.msg || 'Error de conexión');
+        this._alertService.error(err.error?.msg || 'Error de conexión');
       }
     });
   }

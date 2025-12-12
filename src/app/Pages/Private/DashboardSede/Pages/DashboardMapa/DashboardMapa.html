@@ -1,0 +1,109 @@
+<div class="space-y-6">
+  <!-- Selector de nivel -->
+  <div class="flex flex-wrap gap-2">
+    @for (nivel of niveles(); track nivel.nivelId) {
+      <button 
+        (click)="cambiarNivel(nivel.numeroPiso)"
+        class="btn"
+        [class.btn-warning]="nivelSeleccionado() === nivel.numeroPiso"
+        [class.btn-ghost]="nivelSeleccionado() !== nivel.numeroPiso"
+        [class.text-stone-800]="nivelSeleccionado() === nivel.numeroPiso"
+      >
+        Piso {{ nivel.numeroPiso }}
+        <span class="badge badge-sm ml-2" [class.badge-success]="nivel.cajonesLibres > 0">
+          {{ nivel.cajonesLibres }} libres
+        </span>
+      </button>
+    }
+  </div>
+
+  <!-- Leyenda -->
+  <div class="flex flex-wrap gap-4 bg-white/80 border border-stone-200 rounded-xl p-4">
+    <div class="flex items-center gap-2">
+      <span class="w-4 h-4 rounded bg-green-500/30 border border-green-500/50"></span>
+      <span class="text-sm text-stone-500">Libre</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="w-4 h-4 rounded bg-red-500/30 border border-red-500/50"></span>
+      <span class="text-sm text-stone-500">Ocupado</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="w-4 h-4 rounded bg-amber-500/30 border border-amber-500/50"></span>
+      <span class="text-sm text-stone-500">Reservado</span>
+    </div>
+    <div class="border-l border-stone-300 mx-2"></div>
+    <!-- Leyenda de tipos -->
+    <div class="flex items-center gap-2">
+      <lucide-icon [img]="CarIcon" class="w-4 h-4 text-stone-500"></lucide-icon>
+      <span class="text-sm text-stone-500">Normal</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <lucide-icon [img]="ZapIcon" class="w-4 h-4 text-green-400"></lucide-icon>
+      <span class="text-sm text-stone-500">Eléctrico</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <lucide-icon [img]="AccessibilityIcon" class="w-4 h-4 text-blue-400"></lucide-icon>
+      <span class="text-sm text-stone-500">Discapacitado</span>
+    </div>
+    
+    <!-- Botón Asignacion Automática -->
+    <div class="border-l border-stone-300 mx-2"></div>
+    <button (click)="abrirModalAsignacion()" class="btn btn-sm bg-amber-500 hover:bg-amber-600 text-white border-0 gap-2">
+      <lucide-icon [img]="ZapIcon" class="w-4 h-4"></lucide-icon>
+      Asignación Automática
+    </button>
+  </div>
+
+  <!-- Grid de cajones -->
+  <app-cajones-grid
+    [cajones]="cajonesDelNivel()"
+    [esAdmin]="esAdmin()"
+    (onCajonClick)="handleCajonClick($event)"
+    (onReservar)="abrirModalReserva($event.cajon, $event.event)"
+    (onCambiarTipo)="abrirModalCambiarTipo($event.cajon, $event.event)"
+  />
+</div>
+
+<!-- Modals-->
+<app-modal-entrada
+  [modal]="modalEntrada()"
+  (onCerrar)="cerrarModalEntrada()"
+  (onRegistrar)="registrarEntrada()"
+  (onPlacaChange)="actualizarPlacaEntrada($event)"
+/>
+
+<app-modal-salida
+  [modal]="modalSalida()"
+  (onCerrar)="cerrarModalSalida()"
+  (onProcesarPago)="procesarPago()"
+/>
+
+<app-modal-reserva
+  [modal]="modalReserva()"
+  [tarifaPorHora]="tarifaPorHora()"
+  (onCerrar)="cerrarModalReserva()"
+  (onCrearReserva)="crearReserva()"
+  (onPlacaChange)="actualizarPlacaReserva($event)"
+  (onDuracionChange)="actualizarDuracionReserva($event)"
+/>
+
+<app-modal-cambiar-tipo
+  [modal]="modalCambiarTipo()"
+  (onCerrar)="cerrarModalCambiarTipo()"
+  (onCambiarTipo)="cambiarTipoCajon()"
+  (onTipoChange)="actualizarNuevoTipo($event)"
+/>
+
+<app-modal-asignacion-automatica
+  [modal]="modalAsignacionAutomatica()"
+  [nivelSeleccionado]="nivelSeleccionado()"
+  (onCerrar)="cerrarModalAsignacion()"
+  (onAsignar)="asignarAutomaticamente()"
+  (onPlacaChange)="actualizarPlacaAutomatica($event)"
+/>
+
+<app-modal-detalle-reserva
+  [modal]="modalDetalleReserva()"
+  (onCerrar)="cerrarModalDetalleReserva()"
+  (onPagar)="pagarReservaDesdeModal()"
+/>

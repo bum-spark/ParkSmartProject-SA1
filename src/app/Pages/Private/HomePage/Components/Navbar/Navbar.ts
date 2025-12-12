@@ -1,13 +1,19 @@
 import { Component, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { LucideAngularModule, Car, Settings, LogOut } from 'lucide-angular';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   templateUrl: './Navbar.html',
 })
 export class NavbarComponent {
+  // Lucide icons
+  readonly CarIcon = Car;
+  readonly SettingsIcon = Settings;
+  readonly LogOutIcon = LogOut;
+
   nombreUsuario = input<string>('Usuario');
   
   onAbrirDrawer = output<void>();

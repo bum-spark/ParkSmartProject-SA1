@@ -1,0 +1,61 @@
+<div 
+  class="bg-white/80 border border-amber-500/30 rounded-xl p-4 cursor-pointer hover:border-amber-500/60 hover:bg-white transition-all"
+  (click)="verDetalles()"
+>
+  <!-- Header con placa -->
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
+        <lucide-icon [img]="CarIcon" class="w-5 h-5 text-amber-600"></lucide-icon>
+      </div>
+      <span class="font-mono font-bold text-stone-800 text-lg">{{ reserva().placaVehiculo }}</span>
+    </div>
+    <span class="badge badge-warning badge-sm">Pendiente</span>
+  </div>
+  
+  <!-- Info del cajón -->
+  <div class="bg-stone-100 rounded-lg p-3 mb-3">
+    <div class="flex justify-between text-sm">
+      <span class="text-stone-500">Cajón:</span>
+      <span class="text-stone-800 font-medium">{{ reserva().numeroCajon }} - Piso {{ reserva().numeroPiso }}</span>
+    </div>
+  </div>
+  
+  <!-- Tiempo restante -->
+  <div class="space-y-2 mb-3">
+    <div class="flex justify-between text-sm">
+      <span class="text-stone-500">Reservado:</span>
+      <span class="text-stone-800">{{ formatearFecha(reserva().fechaReserva) }}</span>
+    </div>
+    <div class="flex justify-between text-sm">
+      <span class="text-stone-500">Vence:</span>
+      <span class="text-stone-800">{{ formatearFecha(reserva().fechaVencimiento) }}</span>
+    </div>
+    <div class="flex justify-between text-sm">
+      <span class="text-stone-500">Duración:</span>
+      <span class="text-stone-800">{{ reserva().duracionEstimadaHoras }} horas</span>
+    </div>
+  </div>
+  
+  <!-- Indicador de tiempo restante -->
+  @if (!estaVencida()) {
+    <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
+      <div class="flex items-center gap-2">
+        <lucide-icon [img]="ClockIcon" class="h-4 w-4 text-green-400"></lucide-icon>
+        <span class="text-green-400 text-sm font-medium">{{ tiempoFormateado() }}</span>
+      </div>
+    </div>
+  } @else {
+    <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-2">
+      <div class="flex items-center gap-2">
+        <lucide-icon [img]="AlertTriangleIcon" class="h-4 w-4 text-red-400"></lucide-icon>
+        <span class="text-red-400 text-sm font-medium">Reserva vencida - Multa aplicable</span>
+      </div>
+    </div>
+  }
+  
+  <!-- Botón de acción -->
+  <button class="btn btn-sm w-full mt-3 bg-amber-600 hover:bg-amber-500 text-stone-800 border-0">
+    Ver detalles y pagar
+  </button>
+</div>

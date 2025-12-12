@@ -1,0 +1,17 @@
+@if (reservas().length === 0) {
+  <div class="text-center py-12">
+    <lucide-icon [img]="CalendarClockIcon" class="h-16 w-16 text-stone-400 mx-auto mb-4"></lucide-icon>
+    <h3 class="text-xl font-semibold text-stone-800 mb-2">Sin Reservas Activas</h3>
+    <p class="text-stone-500">No hay reservas pendientes en esta sede.</p>
+  </div>
+} @else {
+  <!-- Grid de cards de reservas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    @for (reserva of reservas(); track reserva.reservaId) {
+      <app-reserva-card
+        [reserva]="reserva"
+        (onVerDetalles)="handleVerDetalles($event)"
+      />
+    }
+  </div>
+}

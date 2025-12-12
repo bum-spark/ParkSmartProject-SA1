@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UsuarioLista } from '../../../../../../../Shared/Interfaces';
 import { RolUsuario } from '../../../../../../../Shared/Interfaces/enums';
+import { LucideAngularModule, Pencil } from 'lucide-angular';
 
 export interface CambiarRolData {
   usuarioId: string;
@@ -12,13 +13,15 @@ export interface CambiarRolData {
 @Component({
   selector: 'app-usuarios-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './UsuariosTab.html'
 })
 export class UsuariosTabComponent {
+  // Lucide icons
+  readonly PencilIcon = Pencil;
+
   usuarios = input<UsuarioLista[]>([]);
   cargando = input<boolean>(false);
-  error = input<string | null>(null);
   esAdmin = input<boolean>(false);
   idUsuarioActual = input<string | null>(null);
 

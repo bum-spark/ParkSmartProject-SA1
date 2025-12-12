@@ -1,6 +1,7 @@
 import { Component, input, output, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { LucideAngularModule, Building2, X, Plus, Trash2, Key, Eye, EyeOff } from 'lucide-angular';
 
 export interface NivelForm {
   numeroPiso: number;
@@ -21,10 +22,19 @@ export interface CrearSedeData {
 @Component({
   selector: 'app-modal-crear-sede',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './ModalCrearSede.html'
 })
 export class ModalCrearSedeComponent {
+  // Lucide icons
+  readonly Building2Icon = Building2;
+  readonly XIcon = X;
+  readonly PlusIcon = Plus;
+  readonly Trash2Icon = Trash2;
+  readonly KeyIcon = Key;
+  readonly EyeIcon = Eye;
+  readonly EyeOffIcon = EyeOff;
+
   // Inputs
   isOpen = input.required<boolean>();
   creando = input<boolean>(false);
@@ -44,6 +54,33 @@ export class ModalCrearSedeComponent {
   passwordAcceso = signal<string>('');
   niveles = signal<NivelForm[]>([{ numeroPiso: 1, capacidad: 10 }]);
   mostrarPassword = signal<boolean>(false);
+
+  // Estados touched para validaciones
+  nombreTouched = signal<boolean>(false);
+  direccionTouched = signal<boolean>(false);
+  tarifaTouched = signal<boolean>(false);
+  multaTouched = signal<boolean>(false);
+  passwordTouched = signal<boolean>(false);
+  montoMaximoTouched = signal<boolean>(false);
+
+  // Computed para validaciones
+  nombreInvalido = computed(() => this.nombreTouched() && this.nombre().trim().length < 3);
+  direccionInvalida = computed(() => this.direccionTouched() && this.direccion().trim().length < 5);
+  tarifaInvalida = computed(() => this.tarifaTouched() && this.tarifaPorHora() <= 0);
+  multaInvalida = computed(() => this.multaTouched() && this.multaPorHora() < 0);
+  passwordInvalido = computed(() => this.passwordTouched() && this.passwordAcceso().length < 4);
+  montoMaximoInvalido = computed(() => this.multaConTope() && this.montoMaximoTouched() && this.montoMaximoMulta() <= 0);
+
+  // Computed para verificar si el formulario es válido
+  formularioValido = computed(() => {
+    const nombreValido = this.nombre().trim().length >= 3;
+    const direccionValida = this.direccion().trim().length >= 5;
+    const tarifaValida = this.tarifaPorHora() > 0;
+    const multaValida = this.multaPorHora() >= 0;
+    const passwordValido = this.passwordAcceso().length >= 4;
+    const montoMaximoValido = !this.multaConTope() || this.montoMaximoMulta() > 0;
+    return nombreValido && direccionValida && tarifaValida && multaValida && passwordValido && montoMaximoValido;
+  });
 
   // Computed para total de cajones
   totalCajones = computed(() => {
@@ -95,9 +132,31 @@ export class ModalCrearSedeComponent {
     this.passwordAcceso.set('');
     this.niveles.set([{ numeroPiso: 1, capacidad: 10 }]);
     this.mostrarPassword.set(false);
+    // Limpiar touched
+    this.nombreTouched.set(false);
+    this.direccionTouched.set(false);
+    this.tarifaTouched.set(false);
+    this.multaTouched.set(false);
+    this.passwordTouched.set(false);
+    this.montoMaximoTouched.set(false);
   }
 
   crear(): void {
+    // Marcar todos los campos como touched para mostrar validaciones
+    this.nombreTouched.set(true);
+    this.direccionTouched.set(true);
+    this.tarifaTouched.set(true);
+    this.multaTouched.set(true);
+    this.passwordTouched.set(true);
+    if (this.multaConTope()) {
+      this.montoMaximoTouched.set(true);
+    }
+
+    // Si el formulario no es válido, no continuar
+    if (!this.formularioValido()) {
+      return;
+    }
+
     const data: CrearSedeData = {
       nombre: this.nombre().trim(),
       direccion: this.direccion().trim(),

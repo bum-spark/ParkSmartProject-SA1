@@ -1,0 +1,50 @@
+@if (modal().abierto) {
+  <div class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="cerrar()">
+    <div class="bg-white border border-stone-200 rounded-2xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-stone-200">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
+            <lucide-icon [img]="LogInIcon" class="h-5 w-5 text-green-400"></lucide-icon>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-stone-800">Registrar Entrada</h3>
+            <p class="text-sm text-stone-500">Cajón {{ modal().cajon?.numeroCajon }} - Piso {{ modal().cajon?.numeroPiso }}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        @if (modal().error) {
+          <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
+            <p class="text-red-400 text-sm">{{ modal().error }}</p>
+          </div>
+        }
+        
+        <div class="form-control">
+          <label class="label"><span class="label-text text-stone-600">Placa del Vehículo</span></label>
+          <input 
+            type="text" 
+            [ngModel]="modal().placaVehiculo" 
+            (ngModelChange)="actualizarPlaca($event)"
+            placeholder="ABC-123" 
+            class="input input-bordered bg-stone-100 border-stone-300 text-stone-800 uppercase"
+            [disabled]="modal().cargando"
+            (keyup.enter)="registrar()"
+          />
+        </div>
+      </div>
+      
+      <div class="p-6 border-t border-stone-200 flex gap-3">
+        <button (click)="cerrar()" class="btn flex-1 bg-stone-200 hover:bg-stone-300 text-stone-800 border-0" [disabled]="modal().cargando">
+          Cancelar
+        </button>
+        <button (click)="registrar()" class="btn flex-1 bg-green-600 hover:bg-green-500 text-stone-800 border-0" [disabled]="modal().cargando">
+          @if (modal().cargando) {
+            <span class="loading loading-spinner loading-sm"></span>
+          }
+          Registrar
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,1 +1,121 @@
-﻿<h1>Dashboard-component</h1>
+﻿<div class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100 flex">
+
+  <app-dashboard-sidebar
+    [sedeId]="sede()?.sedeId"
+    [nombreSede]="sede()?.nombre || ''"
+    [cantidadReservasActivas]="cantidadReservasActivas()"
+    (onVolverInicio)="volverInicio()"
+    (onCerrarSesion)="cerrarSesion()"
+  />
+
+  <main class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+    <!-- Header -->
+    <app-dashboard-header
+      [sedeId]="sede()?.sedeId"
+      [direccionSede]="sede()?.direccion || ''"
+      [tabActiva]="tabActiva()"
+      [rolUsuario]="localStorage.rolUsuario() || ''"
+      [nombreUsuario]="localStorage.nombreUsuario() || 'Usuario'"
+      [iniciales]="getIniciales()"
+      (onVolverInicio)="volverInicio()"
+      (onCerrarSesion)="cerrarSesion()"
+    />
+
+    <!-- Area de contenido -->
+    <div class="flex-1 p-4 lg:p-6">
+      @if (loading()) {
+        <div class="flex justify-center items-center py-20">
+          <span class="loading loading-spinner loading-lg text-amber-500"></span>
+        </div>
+      } @else if (error()) {
+        <div class="max-w-md mx-auto">
+          <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <p class="text-red-600 mb-4">{{ error() }}</p>
+            <button (click)="recargar()" class="btn btn-outline border-red-500 text-red-600">Reintentar</button>
+          </div>
+        </div>
+      } @else {
+        <router-outlet></router-outlet>
+      }
+    </div>
+  </main>
+</div>
+
+<!-- Modal de Verificacion de Acceso a Sede -->
+@if (modalAccesoAbierto()) {
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="bg-orange-500 p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+            <lucide-icon [img]="LockIcon" class="h-6 w-6 text-white"></lucide-icon>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-white">Acceso Requerido</h3>
+            <p class="text-white/80 text-sm">Ingresa la contraseña de acceso</p>
+          </div>
+        </div>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-stone-600 text-center">
+          Para acceder a <strong class="text-stone-800">{{ nombreSedePendiente() || 'esta sede' }}</strong> necesitas ingresar la contraseña de acceso.
+        </p>
+        
+        @if (errorAcceso()) {
+          <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+            <p class="text-red-600 text-sm text-center">{{ errorAcceso() }}</p>
+          </div>
+        }
+        
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text text-stone-600 font-medium">Contraseña de acceso</span>
+          </label>
+          <div class="relative">
+            <input 
+              [type]="mostrarPassword() ? 'text' : 'password'"
+              [ngModel]="passwordAcceso()"
+              (ngModelChange)="passwordAcceso.set($event)"
+              (keydown)="handleKeydownPassword($event)"
+              placeholder="Ingresa la contraseña"
+              class="input input-bordered w-full pr-12 bg-stone-50 border-stone-300 focus:border-amber-500 focus:ring-amber-500"
+              [disabled]="verificandoAcceso()"
+              autofocus
+            />
+            <button 
+              type="button"
+              (click)="toggleMostrarPassword()"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+            >
+              @if (mostrarPassword()) {
+                <lucide-icon [img]="EyeOffIcon" class="h-5 w-5"></lucide-icon>
+              } @else {
+                <lucide-icon [img]="EyeIcon" class="h-5 w-5"></lucide-icon>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-6 border-t border-stone-200 flex gap-3">
+        <button 
+          (click)="cancelarYVolverHome()" 
+          class="btn flex-1 bg-stone-200 hover:bg-stone-300 text-stone-700 border-0"
+          [disabled]="verificandoAcceso()"
+        >
+          Volver al inicio
+        </button>
+        <button 
+          (click)="verificarAccesoConPassword()" 
+          class="btn flex-1 bg-amber-500 hover:bg-amber-600 text-white border-0"
+          [disabled]="verificandoAcceso() || !passwordAcceso().trim()"
+        >
+          @if (verificandoAcceso()) {
+            <span class="loading loading-spinner loading-sm"></span>
+          }
+          Verificar
+        </button>
+      </div>
+    </div>
+  </div>
+}

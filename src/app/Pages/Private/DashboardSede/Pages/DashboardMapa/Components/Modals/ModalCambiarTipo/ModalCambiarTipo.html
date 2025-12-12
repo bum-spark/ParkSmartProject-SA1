@@ -1,0 +1,84 @@
+@if (modal().abierto) {
+  <div class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="cerrar()">
+    <div class="bg-white border border-stone-200 rounded-2xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-stone-200">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+            <lucide-icon [img]="SettingsIcon" class="h-5 w-5 text-amber-400"></lucide-icon>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-stone-800">Cambiar Tipo de Cajón</h3>
+            <p class="text-sm text-stone-500">Cajón {{ modal().cajon?.numeroCajon }} - Piso {{ modal().cajon?.numeroPiso }}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        @if (modal().error) {
+          <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
+            <p class="text-red-400 text-sm">{{ modal().error }}</p>
+          </div>
+        }
+
+        <div class="bg-stone-100 rounded-lg p-4">
+          <div class="flex items-center justify-between">
+            <span class="text-stone-500 text-sm">Tipo actual:</span>
+            <span class="text-stone-800 font-medium capitalize">{{ modal().cajon?.tipo }}</span>
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text text-stone-600">Selecciona el nuevo tipo</span></label>
+          <div class="space-y-2">
+            @for (tipo of tiposCajon; track tipo) {
+              <button 
+                type="button" 
+                (click)="actualizarTipo(tipo)" 
+                [disabled]="modal().cargando" 
+                class="w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4" 
+                [ngClass]="modal().nuevoTipo === tipo ? 'border-amber-500 bg-amber-500/10' : 'border-stone-300 bg-stone-100/30 hover:border-stone-400'"
+              >
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center" [ngClass]="{'bg-stone-200': tipo === 'normal', 'bg-green-500/20': tipo === 'electrico', 'bg-blue-500/20': tipo === 'discapacitado'}">
+                  @if (tipo === 'electrico') {
+                    <lucide-icon [img]="ZapIcon" class="w-6 h-6 text-green-400"></lucide-icon>
+                  } @else if (tipo === 'discapacitado') {
+                    <lucide-icon [img]="AccessibilityIcon" class="w-6 h-6 text-blue-400"></lucide-icon>
+                  } @else {
+                    <lucide-icon [img]="CarIcon" class="w-6 h-6 text-stone-600"></lucide-icon>
+                  }
+                </div>
+                
+                <div class="flex-1 text-left">
+                  <p class="font-medium" [ngClass]="modal().nuevoTipo === tipo ? 'text-amber-600' : 'text-stone-800'">{{ getTipoCajonLabel(tipo) }}</p>
+                  <p class="text-xs text-stone-500">
+                    @if (tipo === 'normal') { Estacionamiento estándar para vehículos regulares }
+                    @else if (tipo === 'electrico') { Incluye punto de carga para vehículos eléctricos }
+                    @else { Espacio accesible con dimensiones ampliadas }
+                  </p>
+                </div>
+
+                @if (modal().nuevoTipo === tipo) {
+                  <div class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+                    <lucide-icon [img]="CheckIcon" class="w-4 h-4 text-stone-800"></lucide-icon>
+                  </div>
+                }
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-6 border-t border-stone-200 flex gap-3">
+        <button (click)="cerrar()" class="btn flex-1 bg-stone-200 hover:bg-stone-300 text-stone-800 border-0" [disabled]="modal().cargando">
+          Cancelar
+        </button>
+        <button (click)="cambiarTipo()" class="btn flex-1 bg-amber-600 hover:bg-amber-500 text-stone-800 border-0" [disabled]="modal().cargando || modal().nuevoTipo === modal().cajon?.tipo">
+          @if (modal().cargando) {
+            <span class="loading loading-spinner loading-sm"></span>
+          }
+          Guardar cambio
+        </button>
+      </div>
+    </div>
+  </div>
+}

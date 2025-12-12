@@ -2,22 +2,13 @@
   <div class="w-full max-w-md">
     <div class="text-center mb-8">
       <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl mb-4 shadow-lg shadow-amber-500/25">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-        </svg>
+        <lucide-icon [img]="CarIcon" class="h-8 w-8 text-white"></lucide-icon>
       </div>
       <h1 class="text-3xl font-bold text-stone-800 mb-2">ParkSmart</h1>
-      <p class="text-stone-500">Sistema de Gestión de Estacionamientos</p>
     </div>
 
     <div class="bg-white/80 backdrop-blur-xl rounded-2xl border border-stone-200 p-8 shadow-xl shadow-stone-200/50">
       <h2 class="text-xl font-semibold text-stone-800 mb-6 text-center">Iniciar Sesión</h2>
-
-      @if (error()) {
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p class="text-red-600 text-sm text-center">{{ error() }}</p>
-        </div>
-      }
 
       <form (ngSubmit)="onSubmit()" class="space-y-5">
         <!-- Campo Email -->
@@ -26,12 +17,7 @@
             <span class="label-text text-stone-600 font-medium">Correo electrónico</span>
           </label>
           <label class="input input-bordered w-full flex items-center gap-2 bg-stone-50 border-stone-300 focus-within:border-amber-500 focus-within:outline-amber-500 validator">
-            <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
-                <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-              </g>
-            </svg>
+            <lucide-icon [img]="MailIcon" class="h-4 w-4 opacity-50"></lucide-icon>
             <input 
               type="email" 
               [ngModel]="email()" 
@@ -53,12 +39,7 @@
             <span class="label-text text-stone-600 font-medium">Contraseña</span>
           </label>
           <label class="input input-bordered w-full flex items-center gap-2 bg-stone-50 border-stone-300 focus-within:border-amber-500 focus-within:outline-amber-500 validator">
-            <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
-                <path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path>
-                <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle>
-              </g>
-            </svg>
+            <lucide-icon [img]="KeyRoundIcon" class="h-4 w-4 opacity-50"></lucide-icon>
             <input 
               [type]="mostrarPassword() ? 'text' : 'password'" 
               [ngModel]="password()" 
@@ -81,7 +62,7 @@
           </label>
         </div>
 
-        <button type="submit" class="btn w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25" [disabled]="cargando()">
+        <button type="submit" class="btn w-full bg-orange-600  hover:bg-orange-700 text-white border-0 shadow-lg shadow-amber-500/25" [disabled]="cargando()">
           @if (cargando()) {
             <span class="loading loading-spinner loading-sm"></span>
             Iniciando sesión...
